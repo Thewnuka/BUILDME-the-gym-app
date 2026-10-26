@@ -1,0 +1,16 @@
+{% load ui_tags %}
+{% comment %}Expects `item` (see payments.views.item_summary) and `balance`.{% endcomment %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center"><h2>{{ item.label }}</h2>{% include "payments/_balance_badge.html" with b=balance %}</div>
+  <div class="card-body">
+    <dl class="detail-list mb-0">
+      <dt>Member</dt><dd><a href="{{ item.member.get_absolute_url }}">{{ item.member.full_name }}</a> <span class="font-monospace small text-muted">{{ item.member.member_id }}</span></dd>
+      <dt>When</dt><dd>{{ item.detail }}</dd>
+      <dt>{{ item.price_label }}</dt><dd>{{ item.price|money }}</dd>
+      <dt>Amount due</dt><dd>{{ balance.charge|money }}</dd>
+      <dt>Paid (net)</dt><dd>{{ balance.net_paid|money }}</dd>
+      <dt>Pending</dt><dd>{{ balance.pending|money }}</dd>
+      <dt>Outstanding</dt><dd class="mb-0 fw-bold">{{ balance.outstanding|money }}</dd>
+    </dl>
+  </div>
+</div>

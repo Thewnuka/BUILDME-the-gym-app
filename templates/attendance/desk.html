@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ today_count }} check-in{{ today_count|pluralize }} today · {{ in_gym|length }} in the gym now</p>{% endblock %}
+{% block content %}
+{% include "attendance/_tabs.html" %}
+<div class="row g-4">
+  <div class="col-xl-7 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header"><h2><i class="bi bi-qr-code-scan text-primary me-2"></i>Scan QR pass</h2></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'attendance:check_in_qr' %}" id="qrForm" class="d-flex flex-wrap flex-sm-nowrap gap-2" autocomplete="off">
+          {% csrf_token %}
+          <label class="visually-hidden" for="qrToken">QR code</label>
+          <input type="password" name="token" id="qrToken" class="form-control flex-grow-1 qr-input" placeholder="Scan with a QR scanner, or use the camera" autofocus required>
+          <button type="submit" class="btn btn-primary text-nowrap" data-loading-text="Checking…"><i class="bi bi-box-arrow-in-right me-1"></i>Check in</button>
+          <button type="button" class="btn btn-light border text-nowrap" id="cameraBtn"><i class="bi bi-camera me-1"></i>Camera</button>
+        </form>
+        <div id="qrReader" class="mt-3 d-none" style="max-width:420px"></div>
+        <p class="small text-muted mt-2 mb-0">The QR code holds only a random pass token, no personal details. A handheld scanner types it into the box above.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2><i class="bi bi-search text-primary me-2"></i>Find a member</h2></div>
+      <div class="card-body border-bottom">
+        <form method="get" class="d-flex gap-2" role="search">
+          {% include "components/search_input.html" with value=q placeholder="Member ID, name or phone" %}
+          <button type="submit" class="btn btn-dark" data-no-loading>Search</button>
+        </form>
+      </div>
+      {% if q %}
+        {% if results %}
+        <ul class="list-group list-group-flush">
+          {% for member in results %}
+          <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 min-w-0">
+              {% include "components/member_avatar.html" with size="sm" %}
+              <div class="min-w-0">
+                <a href="{{ member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ member.full_name }}</a>
+                <div class="small text-muted"><span class="font-monospace">{{ member.member_id }}</span> · {{ member.phone|default:"no phone" }}</div>
+                <div class="small">
+                  {% if not member.is_active %}<span class="text-secondary">Inactive member</span>
+                  {% elif member.current_membership %}{{ member.current_membership.plan_name }} until {{ member.current_membership.end_date|date:"d M" }} {% include "components/membership_badge.html" with m=member.current_membership %}
+                  {% else %}<span class="text-danger">No current membership</span>{% endif %}
+                </div>
+              </div>
+            </div>
+            {% if member.is_in %}
+              <span class="badge bg-success-subtle text-success-emphasis">In gym</span>
+            {% else %}
+            <form method="post" action="{% url 'attendance:check_in' %}">
+              {% csrf_token %}
+              <input type="hidden" name="member" value="{{ member.pk }}">
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="btn btn-sm btn-primary" data-loading-text="…"><i class="bi bi-box-arrow-in-right me-1"></i>Check in</button>
+            </form>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          {% include "components/empty_state.html" with icon="search" title="No members found" message="Check the spelling, member ID or phone number." %}
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-xl-5 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2><i class="bi bi-people text-success me-2"></i>In the gym now</h2><span class="badge bg-success">{{ in_gym|length }}</span></div>
+      {% if in_gym %}
+      <ul class="list-group list-group-flush">
+        {% for v in in_gym %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div class="min-w-0">
+            <div class="fw-semibold text-truncate">{{ v.member.full_name }}</div>
+            <div class="small text-muted">In since {{ v.checked_in_at|time:"H:i" }} · {{ v.duration_display }}{% if v.balance_due_at_checkin %} · <span class="text-danger">{{ v.balance_due_at_checkin|money }} due</span>{% endif %}</div>
+          </div>
+          <form method="post" action="{% url 'attendance:check_out' v.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-light border text-nowrap"><i class="bi bi-box-arrow-right me-1"></i>Check out</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {% include "components/empty_state.html" with icon="door-closed" title="Nobody checked in" message="Members who check in will be listed here until they check out." %}
+      {% endif %}
+    </div>
+    {% if recent %}
+    <div class="card">
+      <div class="card-header"><h2>Today's latest check-ins</h2></div>
+      <ul class="list-group list-group-flush small">
+        {% for v in recent %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ v.member.full_name }}</span><span class="text-muted">{{ v.checked_in_at|time:"H:i" }} · {{ v.get_method_display }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var btn = document.getElementById("cameraBtn");
+    var reader = document.getElementById("qrReader");
+    var input = document.getElementById("qrToken");
+    var form = document.getElementById("qrForm");
+    var scanner = null;
+    btn.addEventListener("click", function () {
+      if (scanner) { scanner.clear(); scanner = null; reader.classList.add("d-none"); return; }
+      reader.classList.remove("d-none");
+      var start = function () {
+        scanner = new Html5QrcodeScanner("qrReader", { fps: 10, qrbox: 220 }, false);
+        scanner.render(function (text) {
+          scanner.clear(); scanner = null;
+          input.value = text;
+          form.requestSubmit ? form.requestSubmit() : form.submit();
+        });
+      };
+      if (window.Html5QrcodeScanner) return start();
+      var s = document.createElement("script");
+      s.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+      s.onload = start;
+      s.onerror = function () { reader.textContent = "Camera scanner couldn't be loaded. Use a handheld scanner or manual check-in."; };
+      document.body.appendChild(s);
+    });
+  })();
+</script>
+{% endblock %}

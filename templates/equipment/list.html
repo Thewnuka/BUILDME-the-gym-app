@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block page_actions %}
+{% if perms.accounts.manage_equipment %}<a href="{% url 'equipment:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Register equipment</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-4">{% include "components/search_input.html" with value=filters.q placeholder="Name, code, location or serial" %}</div>
+      <div class="col-6 col-md-2"><select name="status" class="form-select" data-auto-submit aria-label="Status"><option value="">All statuses</option>{% for v, l in statuses %}<option value="{{ v }}"{% if filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><select name="category" class="form-select" data-auto-submit aria-label="Category"><option value="">All categories</option>{% for v, l in categories %}<option value="{{ v }}"{% if filters.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="attention" name="attention" value="1"{% if filters.attention %} checked{% endif %} data-auto-submit><label class="form-check-label small" for="attention">Needs attention</label></div></div>
+      <div class="col-6 col-md-1"><button class="btn btn-dark w-100" data-no-loading>Go</button></div>
+    </form>
+  </div>
+  {% if items %}
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>Code</th><th>Equipment</th><th class="d-none d-md-table-cell">Location</th><th>Status</th><th class="d-none d-lg-table-cell">Condition</th><th>Next service</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for e in items %}
+      <tr>
+        <td class="font-monospace small">{{ e.code }}</td>
+        <td><a href="{{ e.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ e.name }}</a><div class="small text-muted">{{ e.get_category_display }}</div></td>
+        <td class="d-none d-md-table-cell small">{{ e.location|default:"—" }}</td>
+        <td><span class="badge bg-{{ e.status_badge }}-subtle text-{{ e.status_badge }}-emphasis">{{ e.get_status_display }}</span>{% if e.open_fault_count %} <span class="badge bg-danger-subtle text-danger-emphasis">{{ e.open_fault_count }} fault{{ e.open_fault_count|pluralize }}</span>{% endif %}</td>
+        <td class="d-none d-lg-table-cell small">{{ e.get_condition_display }}</td>
+        <td class="small text-nowrap{% if e.maintenance_overdue %} text-danger fw-semibold{% endif %}">{{ e.next_maintenance_date|date:"d M Y"|default:"—" }}</td>
+        <td class="text-end"><a href="{{ e.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="tools" title="No equipment found" message="Registered machines and facilities appear here." %}{% endif %}
+</div>
+{% endblock %}

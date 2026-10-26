@@ -1,0 +1,22 @@
+{% comment %}
+Usage: {% include "components/activity_feed.html" with activities=activities show_actor=True %}
+{% endcomment %}
+{% if activities %}
+<ul class="activity-feed">
+  {% for activity in activities %}
+  <li class="activity-item">
+    <span class="activity-icon bg-{{ activity.color }}-subtle text-{{ activity.color }}-emphasis"><i class="bi bi-{{ activity.icon }}"></i></span>
+    <div class="min-w-0">
+      <div class="fw-semibold">{{ activity.description }}</div>
+      <div class="activity-meta">
+        {{ activity.get_action_display }}
+        {% if show_actor and activity.actor %}· {{ activity.actor }}{% endif %}
+        · <span title="{{ activity.created_at|date:'M j, Y H:i' }}">{{ activity.created_at|timesince }} ago</span>
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+  {% include "components/empty_state.html" with icon="clock-history" title="No activity yet" message="Actions such as sign-ins and account changes will appear here." %}
+{% endif %}

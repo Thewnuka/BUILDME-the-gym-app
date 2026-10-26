@@ -1,0 +1,3 @@
+{% comment %}Kind + status badges for a Payment row `p`.{% endcomment %}
+{% if p.is_refund %}<span class="badge bg-warning-subtle text-warning-emphasis">Refund</span>{% endif %}
+<span class="badge bg-{{ p.status_badge }}-subtle text-{{ p.status_badge }}-emphasis">{{ p.get_status_display }}</span>

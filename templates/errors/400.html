@@ -1,0 +1,5 @@
+{% extends "errors/_error.html" %}
+{% block title %}Bad request · {{ GYM_NAME|default:"BUILDME" }}{% endblock %}
+{% block code %}400{% endblock %}
+{% block heading %}Bad request{% endblock %}
+{% block message %}The request could not be processed. Please go back and try again.{% endblock %}

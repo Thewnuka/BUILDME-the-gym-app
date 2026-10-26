@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block page_actions %}{% if perms.accounts.manage_training %}<a href="{% url 'workouts:exercise_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New exercise</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2" role="search">
+      <div class="col-md-5">{% include "components/search_input.html" with value=filters.q placeholder="Search exercises" %}</div>
+      <div class="col-6 col-md-3"><select name="muscle" class="form-select" data-auto-submit aria-label="Muscle group"><option value="">All muscle groups</option>{% for v, l in muscles %}<option value="{{ v }}"{% if filters.muscle == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><select name="category" class="form-select" data-auto-submit aria-label="Category"><option value="">All categories</option>{% for v, l in categories %}<option value="{{ v }}"{% if filters.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><button class="btn btn-dark w-100" data-no-loading>Search</button></div>
+    </form>
+  </div>
+  {% if exercises %}
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>Exercise</th><th>Muscle group</th><th>Category</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for e in exercises %}<tr{% if not e.is_active %} class="text-muted"{% endif %}><td><a href="{{ e.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ e.name }}</a>{% if not e.is_active %} <span class="badge bg-secondary-subtle text-secondary-emphasis">Hidden</span>{% endif %}<div class="small text-muted">{{ e.description }}</div></td><td>{{ e.get_muscle_group_display }}</td><td>{{ e.get_category_display }}</td><td class="text-end"><a href="{{ e.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% elif is_filtered %}{% include "components/empty_state.html" with icon="search" title="No matching exercises" %}
+  {% else %}{% include "components/empty_state.html" with icon="collection" title="The library is empty" message="Add exercises such as Squat, Bench press or Plank to build workout plans." %}{% endif %}
+</div>
+{% endblock %}

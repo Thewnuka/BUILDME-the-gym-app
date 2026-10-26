@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block page_actions %}
+{% if can_edit %}
+<form method="post" action="{% url 'memberships:plan_toggle_active' plan.pk %}">
+  {% csrf_token %}
+  {% if plan.is_active %}
+  <button type="submit" class="btn btn-outline-danger" data-confirm="Existing memberships keep this plan, but it can't be assigned to new or renewed memberships." data-confirm-title="Deactivate plan?" data-confirm-label="Deactivate" data-confirm-class="btn-danger"><i class="bi bi-slash-circle me-1"></i>Deactivate</button>
+  {% else %}
+  <button type="submit" class="btn btn-outline-success" data-confirm="The plan can be assigned to members again." data-confirm-title="Activate plan?" data-confirm-label="Activate" data-confirm-class="btn-success"><i class="bi bi-check-circle me-1"></i>Activate</button>
+  {% endif %}
+</form>
+<a href="{% url 'memberships:plan_update' plan.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5" data-reveal>
+    <div class="card plan-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          {% if plan.is_active %}<span class="badge bg-success-subtle text-success-emphasis">Active</span>{% else %}<span class="badge bg-secondary-subtle text-secondary-emphasis">Inactive</span>{% endif %}
+          <span class="small text-muted">Updated {{ plan.updated_at|date:"d M Y" }}</span>
+        </div>
+        <div class="plan-price">{{ plan.price|money }}</div>
+        <div class="text-muted mb-3">per {{ plan.duration_display }}</div>
+        {% if plan.description %}<p>{{ plan.description|linebreaksbr }}</p>{% endif %}
+        <div class="stat-label mb-2">Benefits</div>
+        {% if plan.benefit_list %}<ul class="benefit-list mb-3">{% for b in plan.benefit_list %}<li>{{ b }}</li>{% endfor %}</ul>{% else %}<p class="text-muted small">None listed.</p>{% endif %}
+        <div class="stat-label mb-1">Access hours</div>
+        <p class="mb-2">{{ plan.access_summary }}</p>
+        {% if plan.access_restrictions %}<div class="stat-label mb-1">Access notes</div><p class="mb-3">{{ plan.access_restrictions|linebreaksbr }}</p>{% endif %}
+        <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i>Starting today, this plan would run until {{ example_end|date:"d M Y" }}.</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="row g-3 mb-4">
+      <div class="col-6"><div class="card"><div class="card-body"><div class="stat-label">Current members</div><div class="stat-value">{{ current_count }}</div></div></div></div>
+      <div class="col-6"><div class="card"><div class="card-body"><div class="stat-label">All-time periods</div><div class="stat-value">{{ total_count }}</div></div></div></div>
+    </div>
+    <div class="card table-card">
+      <div class="card-header"><h2>Recent memberships on this plan</h2></div>
+      {% if recent %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Member</th><th>Period</th><th class="text-end">Agreed price</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for m in recent %}
+            <tr>
+              <td><a href="{{ m.get_absolute_url }}" class="text-body fw-semibold">{{ m.member.full_name }}</a></td>
+              <td class="small text-nowrap">{{ m.start_date|date:"d M Y" }} – {{ m.end_date|date:"d M Y" }}</td>
+              <td class="text-end text-nowrap">{{ m.price|money }}</td>
+              <td>{% include "components/membership_badge.html" %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="people" title="No members on this plan yet" %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

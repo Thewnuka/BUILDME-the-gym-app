@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{{ plan.name }} · {{ day }}</p>{% endblock %}
+{% block content %}
+<form method="post" class="card">
+  {% csrf_token %}
+  <div class="card-body border-bottom row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label" for="performed_on">Date</label><input type="date" name="performed_on" id="performed_on" class="form-control" value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}"></div>
+    <div class="col-md-9"><label class="form-label" for="notes">How did it go?</label><input type="text" name="notes" id="notes" class="form-control" maxlength="255" placeholder="Optional notes"></div>
+  </div>
+  <div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>Done</th><th>Exercise</th><th>Planned</th><th>Sets</th><th>Reps</th><th>Kg</th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td><input class="form-check-input" type="checkbox" name="done_{{ item.pk }}" id="done{{ item.pk }}" checked aria-label="Completed {{ item.exercise.name }}"></td>
+        <td><label for="done{{ item.pk }}" class="fw-semibold">{{ item.exercise.name }}</label></td>
+        <td class="small text-muted">{{ item.prescription }}</td>
+        <td style="width:90px"><input type="number" min="0" name="sets_{{ item.pk }}" value="{{ item.sets|default_if_none:'' }}" class="form-control form-control-sm" aria-label="Sets done"></td>
+        <td style="width:90px"><input type="number" min="0" name="reps_{{ item.pk }}" value="{{ item.reps|default_if_none:'' }}" class="form-control form-control-sm" aria-label="Reps done"></td>
+        <td style="width:100px"><input type="number" min="0" step="0.5" name="weight_{{ item.pk }}" value="{{ item.weight_kg|default_if_none:'' }}" class="form-control form-control-sm" aria-label="Weight used"></td>
+      </tr>
+      {% empty %}<tr><td colspan="6" class="text-muted">This day has no exercises.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="card-body border-top d-flex gap-2"><button class="btn btn-success" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>Save workout</button><a href="{{ plan.get_absolute_url }}" class="btn btn-light border">Cancel</a></div>
+</form>
+{% endblock %}

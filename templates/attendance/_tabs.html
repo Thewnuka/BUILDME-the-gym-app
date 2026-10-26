@@ -1,0 +1,7 @@
+{% with name=request.resolver_match.url_name %}
+<ul class="nav nav-pills gap-2 mb-3 flex-nowrap overflow-auto">
+  {% if perms.accounts.manage_attendance %}<li class="nav-item"><a class="nav-link text-nowrap{% if name == 'desk' %} active{% endif %}" href="{% url 'attendance:desk' %}"><i class="bi bi-door-open me-1"></i>Check-in desk</a></li>{% endif %}
+  <li class="nav-item"><a class="nav-link text-nowrap{% if name == 'list' %} active{% endif %}" href="{% url 'attendance:list' %}"><i class="bi bi-list-check me-1"></i>History</a></li>
+  <li class="nav-item"><a class="nav-link text-nowrap{% if name == 'daily' %} active{% endif %}" href="{% url 'attendance:daily' %}"><i class="bi bi-bar-chart me-1"></i>Daily report</a></li>
+</ul>
+{% endwith %}

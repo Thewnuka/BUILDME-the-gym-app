@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Registered gym members, their status and current membership.</p>{% endblock %}
+{% block page_actions %}
+{% if can_manage %}<a href="{% url 'members:create' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Register member</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-end" role="search">
+      <div class="col-lg-4">
+        <label class="form-label small" for="q">Search</label>
+        {% include "components/search_input.html" with value=filters.q placeholder="Name, member ID, phone or email" %}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label small" for="status">Member status</label>
+        <select name="status" id="status" class="form-select" data-auto-submit>
+          <option value="">Any</option>
+          {% for value, label in statuses %}<option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label small" for="membership">Membership</label>
+        <select name="membership" id="membership" class="form-select" data-auto-submit>
+          <option value="">Any</option>
+          {% for value, label in membership_filters %}<option value="{{ value }}"{% if filters.membership == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label small" for="joined_from">Registered from</label>
+        <input type="date" name="joined_from" id="joined_from" class="form-control" value="{{ filters.joined_from|date:'Y-m-d' }}">
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label small" for="joined_to">Registered to</label>
+        <input type="date" name="joined_to" id="joined_to" class="form-control" value="{{ filters.joined_to|date:'Y-m-d' }}">
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <label class="form-label small" for="sort">Sort by</label>
+        <select name="sort" id="sort" class="form-select sort-select" data-auto-submit>
+          {% for value, label in sort_options %}<option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Apply</button>
+        {% if is_filtered %}<a href="{% url 'members:list' %}" class="btn btn-light border" title="Clear filters" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if members %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr><th>Member</th><th>Member ID</th><th class="d-none d-md-table-cell">Phone</th><th>Current membership</th><th class="d-none d-lg-table-cell">Registered</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        {% for member in members %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% include "components/member_avatar.html" with size="sm" %}
+              <div class="min-w-0">
+                <a href="{{ member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ member.full_name }}</a>
+                <div class="small text-muted text-truncate">{{ member.email|default:"No email" }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="font-monospace small">{{ member.member_id }}</td>
+          <td class="d-none d-md-table-cell">{{ member.phone|default:"—" }}</td>
+          <td>
+            {% if member.current_plan %}
+              <div class="fw-semibold small">{{ member.current_plan }}{% if member.current_state == "suspended" %} <span class="badge bg-warning-subtle text-warning-emphasis">Suspended</span>{% endif %}</div>
+              <div class="small text-muted">until {{ member.current_end|date:"d M Y" }}</div>
+            {% else %}<span class="text-muted small">None</span>{% endif %}
+          </td>
+          <td class="d-none d-lg-table-cell small">{{ member.joined_on|date:"d M Y" }}</td>
+          <td><span class="badge bg-{{ member.status_badge }}-subtle text-{{ member.status_badge }}-emphasis"><span class="status-dot bg-{{ member.status_badge }}"></span>{{ member.get_status_display }}</span></td>
+          <td class="text-end"><a href="{{ member.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% elif is_filtered %}
+    {% url 'members:list' as reset_url %}
+    {% include "components/empty_state.html" with icon="search" title="No matching members" message="Try a different search term or clear the filters." action_url=reset_url action_label="Clear filters" action_icon="x-lg" %}
+  {% elif can_manage %}
+    {% url 'members:create' as create_url %}
+    {% include "components/empty_state.html" with icon="people" title="No members yet" message="Register your first gym member to get started." action_url=create_url action_label="Register member" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="people" title="No members yet" message="Members will appear here once they're registered." %}
+  {% endif %}
+</div>
+{% endblock %}

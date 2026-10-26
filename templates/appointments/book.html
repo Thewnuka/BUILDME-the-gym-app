@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h2>1. Choose session</h2></div>
+      <div class="card-body">
+        {% if as_member and not form.fields.trainer.queryset.exists %}
+          {% include "components/empty_state.html" with icon="person-badge" title="No trainer assigned" message="Online booking is available with your assigned trainer. Please ask the front desk to assign one or to book for you." %}
+        {% else %}
+        <form method="get" novalidate>
+          <div class="row g-3">
+            {% if form.member %}{% form_field form.member %}{% endif %}
+            {% form_field form.trainer %}
+            {% form_field form.session_type %}
+            {% form_field form.day %}
+            <div class="col-12"><button type="submit" class="btn btn-dark w-100" data-no-loading><i class="bi bi-search me-1"></i>Show free times</button></div>
+          </div>
+        </form>
+        <p class="small text-muted mt-3 mb-0">Sessions can be booked up to {{ horizon }} days ahead.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h2>2. Pick a time</h2></div>
+      <div class="card-body">
+        {% if chosen %}
+          <p class="small text-muted">{{ chosen.session_type.name }} ({{ chosen.session_type.duration_minutes }} min) with {{ chosen.trainer.name }} on {{ chosen.day|date:"l d F" }}{% if member %} for <strong>{{ member.full_name }}</strong>{% endif %}.{% if chosen.session_type.fee %} Fee: {{ chosen.session_type.fee|money }}.{% endif %}</p>
+          {% if slots %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.member %}<input type="hidden" name="member" value="{{ chosen.member.pk }}">{% endif %}
+            <input type="hidden" name="trainer" value="{{ chosen.trainer.pk }}">
+            <input type="hidden" name="session_type" value="{{ chosen.session_type.pk }}">
+            <input type="hidden" name="day" value="{{ chosen.day|date:'Y-m-d' }}">
+            <fieldset class="mb-3"><legend class="form-label fs-6">Available start times</legend>
+              <div class="d-flex flex-wrap gap-2">
+                {% for s in slots %}
+                <input type="radio" class="btn-check" name="start" id="slot{{ forloop.counter }}" value="{{ s.isoformat }}" required>
+                <label class="btn btn-outline-primary" for="slot{{ forloop.counter }}">{{ s|time:"H:i" }}</label>
+                {% endfor %}
+              </div>
+            </fieldset>
+            <label class="form-label" for="notes">Notes (optional)</label>
+            <input type="text" name="notes" id="notes" class="form-control mb-3" maxlength="255" placeholder="e.g. Focus on squat technique">
+            <button type="submit" class="btn btn-primary" data-loading-text="Booking…"><i class="bi bi-calendar-check me-1"></i>Confirm booking</button>
+          </form>
+          {% else %}
+            {% include "components/empty_state.html" with icon="calendar-x" title="No free times" message="The trainer has no free slots that day (or it's outside their availability). Try another date." %}
+          {% endif %}
+        {% else %}
+          {% include "components/empty_state.html" with icon="clock" title="Choose a trainer, session and date" message="Free times are shown here, already checked against the trainer's availability and existing bookings." %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2 @@
+{% comment %}Usage: {% include "components/membership_badge.html" with m=membership %}{% endcomment %}
+<span class="badge bg-{{ m.status_badge }}-subtle text-{{ m.status_badge }}-emphasis"><span class="status-dot bg-{{ m.status_badge }}"></span>{{ m.status_label }}</span>

@@ -1,0 +1,65 @@
+{% extends "layouts/skeleton.html" %}
+{% load ui_tags %}
+{% block title %}{{ page_title }} · {{ GYM_NAME }}{% endblock %}
+{% block extra_head %}
+<style>
+  body { background: var(--gym-bg); }
+  .receipt { max-width: 640px; margin: 2rem auto; background: #fff; border-radius: 16px; box-shadow: var(--gym-shadow); padding: 2rem; position: relative; overflow: hidden; }
+  .receipt h1 { font-size: 1.6rem; color: var(--gym-primary); margin: 0; }
+  .receipt dt { font-weight: 500; color: var(--gym-muted); }
+  .receipt .totals dd, .receipt .totals dt { margin: 0; padding: .35rem 0; border-bottom: 1px dashed var(--gym-border); }
+  .void-stamp { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg); font-size: 6rem; font-weight: 800; color: rgba(220, 38, 38, .18); letter-spacing: .1em; pointer-events: none; }
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .receipt { box-shadow: none; margin: 0 auto; padding: 0; }
+  }
+</style>
+{% endblock %}
+{% block body %}
+<div class="container-fluid px-3">
+  <div class="receipt" role="document" aria-label="{{ page_title }}">
+    {% if is_void %}<div class="void-stamp" aria-hidden="true">VOID</div>{% endif %}
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+      <div>
+        <h1>{{ gym_name }}</h1>
+        {% if gym.address or gym.phone or gym.email %}<div class="small text-muted">{% if gym.address %}{{ gym.address|linebreaksbr }}<br>{% endif %}{{ gym.phone }}{% if gym.phone and gym.email %} · {% endif %}{{ gym.email }}{% if gym.registration %}<br>Reg. {{ gym.registration }}{% endif %}</div>{% endif %}
+        <div class="fw-semibold">{% if is_refund %}Refund receipt{% else %}Payment receipt{% endif %}</div>
+      </div>
+      <div class="text-end small">
+        <div class="font-monospace fw-bold fs-6">{{ payment.receipt_number }}</div>
+        <div class="text-muted">Ref. <span class="font-monospace">{{ payment.reference }}</span></div>
+      </div>
+    </div>
+    {% if is_void %}<div class="alert alert-danger py-2 small">This transaction was voided on {{ payment.voided_at|date:"d M Y" }} and is not valid.</div>{% endif %}
+    <div class="row small mb-3">
+      <div class="col-sm-6">
+        <dl class="mb-0">
+          <dt>Member</dt><dd>{{ member.full_name }}<br><span class="font-monospace">{{ member.member_id }}</span></dd>
+          <dt>For</dt><dd>{{ payment.item_label }}<br>{{ payment.item_detail }}</dd>
+        </dl>
+      </div>
+      <div class="col-sm-6">
+        <dl class="mb-0">
+          <dt>{% if is_refund %}Refund{% else %}Payment{% endif %} date</dt><dd>{{ payment.paid_on|date:"d M Y" }}</dd>
+          <dt>Method</dt><dd>{{ payment.get_method_display }}{% if payment.external_reference %} · {{ payment.external_reference }}{% endif %}</dd>
+          {% if payment.refund_of %}<dt>Refund of</dt><dd class="font-monospace">{{ payment.refund_of.reference }}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+    <dl class="row totals mx-0 mb-3">
+      <dt class="col-7">Amount due</dt><dd class="col-5 text-end">{{ amount_due|money }}</dd>
+      <dt class="col-7">{% if is_refund %}Amount refunded{% else %}Amount paid{% endif %}</dt><dd class="col-5 text-end fw-bold fs-5">{{ payment.amount|money }}</dd>
+      <dt class="col-7">Total paid to date (net)</dt><dd class="col-5 text-end">{{ total_paid|money }}</dd>
+      <dt class="col-7">Outstanding balance</dt><dd class="col-5 text-end fw-bold">{{ outstanding|money }}</dd>
+    </dl>
+    <p class="small text-muted mb-0">Recorded by {{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }} · issued {{ generated_at|date:"d M Y H:i" }}. Balances shown as at this transaction.</p>
+    {% if gym.receipt_footer %}<p class="small text-center border-top pt-3 mt-3 mb-0">{{ gym.receipt_footer }}</p>{% endif %}
+    <div class="no-print d-flex flex-wrap gap-2 mt-4">
+      <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+      <a href="{% url 'payments:receipt_pdf' payment.pk %}" class="btn btn-light border"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
+      {% if perms.accounts.view_payments %}<a href="{{ payment.get_absolute_url }}" class="btn btn-light border">Back to transaction</a>{% else %}<a href="{% url 'dashboard:home' %}" class="btn btn-light border">Back to dashboard</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

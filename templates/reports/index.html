@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Every report is built from live records and can be filtered, printed and exported to CSV or PDF.</p>{% endblock %}
+{% block content %}
+{% for section, reports in sections.items %}
+<h2 class="h5 mt-2 mb-3">{{ section }}</h2>
+<div class="row g-3 mb-4">
+  {% for r in reports %}
+  <div class="col-md-6 col-xl-4"><a href="{% url 'reports:report' r.slug %}" class="card h-100 text-body text-decoration-none"><div class="card-body">
+    <div class="fw-semibold"><i class="bi bi-file-earmark-bar-graph text-primary me-1"></i>{{ r.title }}</div>
+    <div class="small text-muted mt-1">{{ r.description }}</div>
+  </div></a></div>
+  {% endfor %}
+</div>
+{% empty %}
+<div class="card">{% include "components/empty_state.html" with icon="file-earmark-bar-graph" title="No reports available" message="Your role doesn't include any report areas." %}</div>
+{% endfor %}
+{% endblock %}

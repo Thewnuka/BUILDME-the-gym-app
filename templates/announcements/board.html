@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block page_actions %}{% if perms.accounts.manage_announcements %}<a href="{% url 'announcements:manage' %}" class="btn btn-light border">Manage</a>{% endif %}{% endblock %}
+{% block content %}
+{% for a in announcements %}
+<div class="card mb-3"><div class="card-body">
+  <div class="d-flex justify-content-between gap-2 mb-1"><span class="badge bg-{{ a.kind_badge }}-subtle text-{{ a.kind_badge }}-emphasis">{{ a.get_kind_display }}</span><span class="small text-muted">{{ a.publish_at|date:"d M Y" }}{% if a.expires_at %} · until {{ a.expires_at|date:"d M Y H:i" }}{% endif %}</span></div>
+  <h2 class="h5"><a href="{{ a.get_absolute_url }}" class="text-body text-decoration-none">{{ a.title }}</a></h2>
+  <p class="mb-0">{{ a.body|linebreaksbr }}</p>
+</div></div>
+{% empty %}
+<div class="card">{% include "components/empty_state.html" with icon="megaphone" title="No current notices" message="Gym news, closures and updates will appear here." %}</div>
+{% endfor %}
+{% endblock %}

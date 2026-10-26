@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_actions %}
+{% if can_manage %}
+  <a href="{% url 'accounts:user_update' profile_user.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    {% include "accounts/_user_summary.html" %}
+    {% if can_manage %}
+    <div class="card mt-4">
+      <div class="card-header"><h2>Account actions</h2></div>
+      <div class="card-body d-grid gap-2">
+        <a href="{% url 'accounts:user_set_password' profile_user.pk %}" class="btn btn-light border text-start"><i class="bi bi-key me-2"></i>Set a new password</a>
+        <form method="post" action="{% url 'accounts:user_send_setup_email' profile_user.pk %}" class="d-grid">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-light border text-start" data-loading-text="Sending…"><i class="bi bi-envelope me-2"></i>Email password setup link</button>
+        </form>
+        {% if not is_self %}
+        <form method="post" action="{% url 'accounts:user_toggle_active' profile_user.pk %}" class="d-grid">
+          {% csrf_token %}
+          {% if profile_user.is_active %}
+          <button type="submit" class="btn btn-outline-danger text-start"
+                  data-confirm="{{ profile_user }} will be signed out and unable to sign in until reactivated."
+                  data-confirm-title="Deactivate account?" data-confirm-label="Deactivate" data-confirm-class="btn-danger">
+            <i class="bi bi-person-slash me-2"></i>Deactivate account
+          </button>
+          {% else %}
+          <button type="submit" class="btn btn-outline-success text-start"
+                  data-confirm="{{ profile_user }} will be able to sign in again."
+                  data-confirm-title="Activate account?" data-confirm-label="Activate" data-confirm-class="btn-success">
+            <i class="bi bi-person-check me-2"></i>Activate account
+          </button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header"><h2>Recent activity</h2></div>
+      <div class="card-body">{% include "components/activity_feed.html" with activities=activities %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

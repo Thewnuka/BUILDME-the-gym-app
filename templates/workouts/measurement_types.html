@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Extra body measurements members and trainers can record (e.g. Waist, Chest, Arm).</p>{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card">
+    {% if types %}<ul class="list-group list-group-flush">{% for t in types %}<li class="list-group-item d-flex justify-content-between align-items-center"><span>{{ t }}{% if not t.is_active %} <span class="badge bg-secondary-subtle text-secondary-emphasis">Hidden</span>{% endif %}</span><form method="post">{% csrf_token %}<input type="hidden" name="toggle" value="{{ t.pk }}"><button class="btn btn-sm btn-light border">{% if t.is_active %}Hide{% else %}Show{% endif %}</button></form></li>{% endfor %}</ul>
+    {% else %}{% include "components/empty_state.html" with icon="rulers" title="No extra measurements" message="Weight, height and body fat are always available." %}{% endif %}
+  </div></div>
+  <div class="col-lg-5"><div class="card"><div class="card-body">
+    {% include "components/form_errors.html" %}
+    <form method="post" novalidate>{% csrf_token %}<div class="row g-3">{% form_field form.name "col-8" %}{% form_field form.unit "col-4" %}<div class="col-12"><button class="btn btn-primary">Add measurement</button></div></div></form>
+  </div></div></div>
+</div>
+{% endblock %}

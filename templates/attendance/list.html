@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{{ summary.visits }} visit{{ summary.visits|pluralize }} by {{ summary.members }} member{{ summary.members|pluralize }} between {{ filters.date_from|date:"d M Y" }} and {{ filters.date_to|date:"d M Y" }}{% if member_filter %} · {{ member_filter.full_name }}{% endif %}</p>{% endblock %}
+{% block content %}
+{% include "attendance/_tabs.html" %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-end" role="search">
+      {% if member_filter %}<input type="hidden" name="member" value="{{ member_filter.pk }}">{% endif %}
+      <div class="col-lg-4"><label class="form-label small" for="q">Search</label>{% include "components/search_input.html" with value=filters.q placeholder="Member ID, name or phone" %}</div>
+      <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="date_from">From</label><input type="date" name="date_from" id="date_from" class="form-control" value="{{ filters.date_from|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="date_to">To</label><input type="date" name="date_to" id="date_to" class="form-control" value="{{ filters.date_to|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="status">Status</label>
+        <select name="status" id="status" class="form-select" data-auto-submit>
+          <option value="">All</option>
+          <option value="open"{% if filters.status == "open" %} selected{% endif %}>In gym</option>
+          <option value="closed"{% if filters.status == "closed" %} selected{% endif %}>Checked out</option>
+          <option value="auto"{% if filters.status == "auto" %} selected{% endif %}>No check-out</option>
+        </select></div>
+      <div class="col-6 col-md-3 col-lg-1"><label class="form-label small" for="method">Method</label>
+        <select name="method" id="method" class="form-select" data-auto-submit><option value="">All</option>{% for v, l in methods %}<option value="{{ v }}"{% if filters.method == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-md-3 col-lg-1 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Apply</button>
+      </div>
+    </form>
+    {% if member_filter %}<div class="small mt-2">Showing visits for <strong>{{ member_filter.full_name }}</strong> · <a href="{% url 'attendance:list' %}">show everyone</a></div>{% endif %}
+  </div>
+  {% if visits %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th><th class="d-none d-md-table-cell">Duration</th><th class="d-none d-lg-table-cell">Plan</th><th class="d-none d-lg-table-cell">Method</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for v in visits %}
+        <tr>
+          <td><a href="{{ v.member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ v.member.full_name }}</a><div class="small text-muted font-monospace">{{ v.member.member_id }}</div></td>
+          <td class="small text-nowrap">{{ v.checked_in_at|date:"D d M" }}</td>
+          <td class="small">{{ v.checked_in_at|time:"H:i" }}</td>
+          <td class="small">{% if v.checked_out_at %}{{ v.checked_out_at|time:"H:i" }}{% else %}—{% endif %}</td>
+          <td class="small d-none d-md-table-cell">{{ v.duration_display }}</td>
+          <td class="small d-none d-lg-table-cell">{{ v.membership.plan_name }}</td>
+          <td class="small d-none d-lg-table-cell">{{ v.get_method_display }}</td>
+          <td><span class="badge bg-{{ v.status_badge }}-subtle text-{{ v.status_badge }}-emphasis">{{ v.status_label }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="calendar-x" title="No visits in this period" message="Try a wider date range or clear the filters." %}
+  {% endif %}
+</div>
+{% endblock %}

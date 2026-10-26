@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Measurements are recorded as entered. They are a personal log, not a medical assessment.</p>{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header"><h2>Body weight</h2></div>
+      <div class="card-body">
+        {% if series.weight %}<div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="weightChart" role="img" aria-label="Body weight over time"></canvas></div>
+        {% else %}{% include "components/empty_state.html" with icon="graph-up" title="No weight recorded yet" %}{% endif %}
+      </div>
+    </div>
+    {% if series.measurements %}
+    <div class="card"><div class="card-header"><h2>Measurements</h2></div><div class="card-body"><div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="measureChart" role="img" aria-label="Measurements over time"></canvas></div></div></div>
+    {% endif %}
+    {{ series|json_script:"progressData" }}
+    <div class="card table-card">
+      <div class="card-header"><h2>History</h2></div>
+      {% if entries %}
+      <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Date</th><th>Weight</th><th>Height</th><th>Body fat</th><th class="d-none d-md-table-cell">Other</th><th class="d-none d-md-table-cell">Notes</th></tr></thead>
+        <tbody>{% for e in entries %}<tr><td class="text-nowrap">{{ e.recorded_on|date:"d M Y" }}</td><td>{% if e.weight_kg %}{{ e.weight_kg }} kg{% else %}—{% endif %}</td><td>{% if e.height_cm %}{{ e.height_cm }} cm{% else %}—{% endif %}</td><td>{% if e.body_fat_pct %}{{ e.body_fat_pct }} %{% else %}—{% endif %}</td><td class="d-none d-md-table-cell small">{% for m in e.measurements.all %}{{ m.measurement_type.name }} {{ m.value }} {{ m.measurement_type.unit }}{% if not forloop.last %}, {% endif %}{% endfor %}</td><td class="d-none d-md-table-cell small">{{ e.notes }}{% if e.recorded_by and e.recorded_by_id != member.user_id %} <span class="text-muted">· by {{ e.recorded_by }}</span>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<div class="card-body small text-muted">No entries yet.</div>{% endif %}
+    </div>
+  </div>
+  {% if form %}
+  <div class="col-xl-4">
+    <div class="card"><div class="card-header"><h2>Add entry</h2></div><div class="card-body">
+      {% include "components/form_errors.html" %}
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="row g-3">{% for field in form %}{% if field.name == "notes" or field.name == "recorded_on" %}{% form_field field %}{% else %}{% form_field field "col-6" %}{% endif %}{% endfor %}
+          <div class="col-12"><button class="btn btn-primary w-100" data-loading-text="Saving…">Save entry</button></div></div>
+      </form>
+    </div></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var data = JSON.parse(document.getElementById("progressData").textContent);
+    var palette = ["#f2541b", "#2563eb", "#0e9f9a", "#d97706", "#7c3aed", "#16a34a"];
+    function line(id, datasets) {
+      var el = document.getElementById(id); if (!el || !window.Chart) return;
+      var labels = Array.from(new Set([].concat.apply([], datasets.map(function (d) { return d.data.map(function (p) { return p.x; }); })))).sort();
+      new Chart(el, { type: "line", data: { labels: labels, datasets: datasets.map(function (d, i) {
+        var byX = {}; d.data.forEach(function (p) { byX[p.x] = p.y; });
+        return { label: d.label, data: labels.map(function (x) { return x in byX ? byX[x] : null; }), spanGaps: true,
+                 borderColor: palette[i % palette.length], backgroundColor: palette[i % palette.length], tension: .25 };
+      }) }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: datasets.length > 1 } } } });
+      el.closest(".chart-box").classList.add("is-ready");
+    }
+    line("weightChart", [{ label: "Weight (kg)", data: data.weight }]);
+    line("measureChart", Object.keys(data.measurements).map(function (k) { return { label: k, data: data.measurements[k] }; }));
+  });
+</script>
+{% endblock %}

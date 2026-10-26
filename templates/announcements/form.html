@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-8"><div class="card"><div class="card-body"><div class="row g-3">
+      {% form_field form.title "col-md-8" %}{% form_field form.kind "col-md-4" %}{% form_field form.body %}
+      {% form_field form.audience "col-md-6" %}<div class="col-md-6" id="planField">{% form_field form.plan "col-12" %}</div><div class="col-md-6" id="roleField">{% form_field form.role "col-12" %}</div>
+      {% form_field form.publish_at "col-md-6" %}{% form_field form.expires_at "col-md-6" %}
+      {% form_field form.notify_recipients %}{% form_field form.send_external %}{% form_field form.is_active %}
+    </div></div></div></div>
+    <div class="col-xl-4">
+      <div class="card mb-4"><div class="card-body small text-muted">Recipients are notified <strong>once</strong>, when the announcement goes live. Scheduled announcements are sent by the scheduled task. Email/SMS/WhatsApp only go out if those channels are configured; check the Message Log to see what was actually delivered.</div></div>
+      <div class="d-grid gap-2"><button class="btn btn-primary" data-loading-text="Saving…">Save announcement</button><a href="{% url 'announcements:manage' %}" class="btn btn-light border">Cancel</a></div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var audience = document.getElementById("id_audience");
+    function sync() {
+      document.getElementById("planField").classList.toggle("d-none", audience.value !== "plan");
+      document.getElementById("roleField").classList.toggle("d-none", audience.value !== "role");
+    }
+    audience.addEventListener("change", sync); sync();
+  })();
+</script>
+{% endblock %}

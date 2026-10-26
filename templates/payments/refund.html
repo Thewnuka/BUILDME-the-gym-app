@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <div class="alert alert-warning small d-flex gap-2"><i class="bi bi-exclamation-triangle mt-1"></i><div>A refund records money paid <strong>back</strong> to the member. It reduces collected revenue on the refund date and gets its own receipt. Up to <strong>{{ refundable|money }}</strong> of this payment can still be refunded.</div></div>
+        {% include "components/form_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form.submission_token }}
+          <div class="row g-3">
+            {% form_field form.amount "col-md-6" %}
+            {% form_field form.paid_on "col-md-6" %}
+            {% form_field form.method "col-md-6" %}
+            {% form_field form.reason "col-md-6" %}
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-warning" data-confirm="This records money paid back to {{ payment.member.full_name }}. It can't be edited afterwards, only voided." data-confirm-title="Record refund?" data-confirm-label="Record refund" data-confirm-class="btn-warning"><i class="bi bi-arrow-counterclockwise me-1"></i>Record refund</button>
+              <a href="{{ payment.get_absolute_url }}" class="btn btn-light border">Cancel</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h2>Original payment</h2></div>
+      <div class="card-body">
+        <dl class="detail-list mb-0">
+          <dt>Reference</dt><dd class="font-monospace">{{ payment.reference }}</dd>
+          <dt>Member</dt><dd>{{ payment.member.full_name }}</dd>
+          <dt>Amount</dt><dd>{{ payment.amount|money }}</dd>
+          <dt>Date &amp; method</dt><dd class="mb-0">{{ payment.paid_on|date:"d M Y" }} · {{ payment.get_method_display }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

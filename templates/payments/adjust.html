@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <p class="text-muted small">Adjustments change what the member <strong>owes</strong>. No money changes hands. A discount can't exceed the unpaid balance; to return money already paid, refund the payment instead. Adjustments are permanent; correct a mistake with an opposite adjustment.</p>
+        {% include "components/form_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            {% form_field form.kind %}
+            {% form_field form.amount "col-md-6" %}
+            {% form_field form.reason "col-md-6" %}
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>Save adjustment</button>
+              <a href="{{ membership.get_absolute_url }}" class="btn btn-light border">Cancel</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">{% include "payments/_balance_summary.html" %}</div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block page_actions %}
+{% if unread_notifications %}
+<form method="post" data-keep-scroll action="{% url 'notifications:read_all' %}">{% csrf_token %}<button type="submit" class="btn btn-light border"><i class="bi bi-check2-all me-1"></i>Mark all as read</button></form>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="?show=all" class="btn btn-sm {% if show == 'all' and not category %}btn-primary{% else %}btn-light border{% endif %}">All</a>
+  <a href="?show=unread" class="btn btn-sm {% if show == 'unread' %}btn-primary{% else %}btn-light border{% endif %}">Unread{% if unread_notifications %} ({{ unread_notifications }}){% endif %}</a>
+  {% for v, l in categories %}<a href="?category={{ v }}" class="btn btn-sm {% if category == v %}btn-primary{% else %}btn-light border{% endif %}">{{ l }}</a>{% endfor %}
+</div>
+<div class="card">
+  {% if notifications %}
+  <ul class="list-group list-group-flush">
+    {% for n in notifications %}
+    <li class="list-group-item d-flex justify-content-between align-items-start gap-3{% if not n.is_read %} bg-primary-subtle{% endif %}">
+      <div class="d-flex gap-3 min-w-0">
+        <span class="activity-icon bg-light"><i class="bi bi-{{ n.icon }}"></i></span>
+        <div class="min-w-0">
+          <div class="fw-semibold">{% if not n.is_read %}<span class="status-dot bg-primary"></span>{% endif %}{{ n.title }}</div>
+          {% if n.message %}<div class="small">{{ n.message }}</div>{% endif %}
+          <div class="activity-meta">{{ n.get_category_display }} · {{ n.created_at|date:"d M Y H:i" }} · {{ n.created_at|timesince }} ago</div>
+        </div>
+      </div>
+      <form method="post" data-keep-scroll action="{% url 'notifications:open' n.pk %}" data-no-loading>{% csrf_token %}<button type="submit" class="btn btn-sm btn-light border text-nowrap">{% if n.link %}Open{% else %}Mark read{% endif %}</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="bell" title="No notifications" message="Reminders, payments, session changes and announcements will appear here." %}
+  {% endif %}
+</div>
+{% endblock %}

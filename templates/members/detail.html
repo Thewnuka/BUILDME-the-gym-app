@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load ui_tags payments_tags attendance_tags training_tags %}
+{% block subtitle %}<p class="page-subtitle font-monospace">{{ member.member_id }}</p>{% endblock %}
+{% block page_actions %}
+{% if can_manage_memberships and member.is_active %}
+  {% if latest %}
+    {% if not scheduled %}<a href="{% url 'memberships:renew' latest.pk %}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Renew / change plan</a>{% endif %}
+  {% else %}
+    <a href="{% url 'memberships:assign' member.pk %}" class="btn btn-outline-primary"><i class="bi bi-card-checklist me-1"></i>Assign membership</a>
+  {% endif %}
+{% endif %}
+{% if can_manage %}<a href="{% url 'members:update' member.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>{% endif %}
+{% endblock %}
+{% block content %}
+{% if not member.is_active %}
+<div class="alert alert-secondary d-flex gap-2 align-items-start">
+  <i class="bi bi-person-dash mt-1"></i>
+  <div>This member was deactivated on {{ member.deactivated_on|date:"d M Y" }}{% if member.deactivation_reason %} ({{ member.deactivation_reason }}){% endif %}. Their history is kept, but they can't receive new memberships until reactivated.</div>
+</div>
+{% endif %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body text-center py-4">
+        {% include "components/member_avatar.html" with size="xl" %}
+        <h2 class="h4 mt-3 mb-1">{{ member.full_name }}</h2>
+        <div class="text-muted font-monospace small mb-3">{{ member.member_id }}</div>
+        <span class="badge bg-{{ member.status_badge }}-subtle text-{{ member.status_badge }}-emphasis"><span class="status-dot bg-{{ member.status_badge }}"></span>{{ member.get_status_display }}</span>
+      </div>
+      <div class="card-body border-top">
+        <dl class="detail-list">
+          <dt>Phone</dt><dd>{{ member.phone|default:"—" }}</dd>
+          <dt>Email</dt><dd class="text-break">{{ member.email|default:"—" }}</dd>
+          <dt>Address</dt><dd>{{ member.address|default:"—"|linebreaksbr }}</dd>
+          <dt>Date of birth</dt><dd>{% if member.date_of_birth %}{{ member.date_of_birth|date:"d M Y" }} ({{ member.age }} yrs){% else %}—{% endif %}</dd>
+          <dt>Emergency contact</dt><dd>{% if member.emergency_contact_name %}{{ member.emergency_contact_name }} · {{ member.emergency_contact_phone }}{% else %}—{% endif %}</dd>
+          <dt>Registered</dt><dd>{{ member.joined_on|date:"d M Y" }}</dd>
+          <dt>Portal login</dt>
+          <dd class="mb-0">
+            {% if member.user %}<i class="bi bi-check-circle text-success me-1"></i>{{ member.user.username }}{% if not member.user.has_usable_password %} <span class="text-muted small">(setup link sent, password not set yet)</span>{% endif %}
+            {% else %}<span class="text-muted">None</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+      {% if member.fitness_goals %}
+      <div class="card-body border-top">
+        <div class="stat-label mb-1">Fitness goals</div>
+        <p class="mb-0">{{ member.fitness_goals|linebreaksbr }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if can_manage %}
+    <div class="card mt-4">
+      <div class="card-header"><h2>Member actions</h2></div>
+      <div class="card-body d-grid gap-2">
+        {% if not member.user and member.email and member.is_active %}
+        <form method="post" action="{% url 'members:portal_login' member.pk %}" class="d-grid">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-light border text-start" data-loading-text="Sending…"><i class="bi bi-envelope me-2"></i>Create portal login</button>
+        </form>
+        {% endif %}
+        {% if member.is_active %}
+        <button type="button" class="btn btn-outline-danger text-start" data-bs-toggle="modal" data-bs-target="#deactivateModal"><i class="bi bi-person-dash me-2"></i>Deactivate member</button>
+        {% else %}
+        <form method="post" action="{% url 'members:reactivate' member.pk %}" class="d-grid">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-success text-start" data-confirm="{{ member.full_name }} will be able to receive memberships again{% if member.user %} and sign in to the portal{% endif %}." data-confirm-title="Reactivate member?" data-confirm-label="Reactivate" data-confirm-class="btn-success"><i class="bi bi-person-check me-2"></i>Reactivate member</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="card membership-hero">
+      <div class="card-header d-flex align-items-center justify-content-between"><h2>Current membership</h2>{% if current %}{% include "components/membership_badge.html" with m=current %}{% endif %}</div>
+      <div class="card-body">
+        {% if current %}
+          <div class="d-flex flex-wrap justify-content-between gap-3">
+            <div>
+              <div class="h4 mb-1">{{ current.plan_name }}</div>
+              <div class="text-muted">{{ current.start_date|date:"d M Y" }} – {{ current.end_date|date:"d M Y" }} · {{ current.duration_display }}</div>
+            </div>
+            <div class="text-end">
+              <div class="stat-value">{{ current.days_remaining }}</div>
+              <div class="stat-note">day{{ current.days_remaining|pluralize }} left</div>
+            </div>
+          </div>
+          {% if perms.accounts.view_memberships %}<a href="{{ current.get_absolute_url }}" class="btn btn-sm btn-light border mt-3">Manage membership</a>{% endif %}
+        {% elif scheduled %}
+          <p class="mb-0">No membership is active today. The next period starts on <strong>{{ scheduled.0.start_date|date:"d M Y" }}</strong>.</p>
+        {% elif latest %}
+          {% include "components/empty_state.html" with icon="hourglass-bottom" title="Membership expired" message="The last membership ended without a renewal." %}
+        {% else %}
+          {% if can_manage_memberships and member.is_active %}
+            {% url 'memberships:assign' member.pk as assign_url %}
+            {% include "components/empty_state.html" with icon="card-checklist" title="No membership yet" message="Assign a plan to start this member's first membership." action_url=assign_url action_label="Assign membership" %}
+          {% else %}
+            {% include "components/empty_state.html" with icon="card-checklist" title="No membership yet" %}
+          {% endif %}
+        {% endif %}
+        {% for s in scheduled %}
+          <div class="alert alert-info small mt-3 mb-0 d-flex justify-content-between align-items-center gap-2">
+            <span><i class="bi bi-calendar-event me-1"></i>Scheduled: <strong>{{ s.plan_name }}</strong> from {{ s.start_date|date:"d M Y" }} to {{ s.end_date|date:"d M Y" }}</span>
+            {% if perms.accounts.view_memberships %}<a href="{{ s.get_absolute_url }}" class="alert-link text-nowrap">View</a>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-header"><h2>Membership history</h2></div>
+      {% if history %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Plan</th><th>Period</th><th class="d-none d-md-table-cell">Type</th><th class="text-end">Agreed price</th><th>Status</th>{% if perms.accounts.view_payments %}<th>Payment</th>{% endif %}</tr></thead>
+          <tbody>
+            {% for m in history %}
+            <tr>
+              <td>{% if perms.accounts.view_memberships %}<a href="{{ m.get_absolute_url }}" class="fw-semibold text-body">{{ m.plan_name }}</a>{% else %}<span class="fw-semibold">{{ m.plan_name }}</span>{% endif %}<div class="small text-muted">{{ m.duration_display }}</div></td>
+              <td class="small text-nowrap">{{ m.start_date|date:"d M Y" }} –<br>{{ m.end_date|date:"d M Y" }}</td>
+              <td class="d-none d-md-table-cell small">{{ m.get_kind_display }}</td>
+              <td class="text-end text-nowrap">{{ m.price|money }}</td>
+              <td>{% include "components/membership_badge.html" %}</td>
+              {% if perms.accounts.view_payments %}<td>{% include "payments/_balance_badge.html" with b=m|membership_balance %}</td>{% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="clock-history" title="No membership history" message="Assigned memberships and renewals will be listed here." %}
+      {% endif %}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6">{% member_payments member %}</div>
+      <div class="col-md-6">{% member_attendance member %}</div>
+      <div class="col-12">{% member_training member %}</div>
+    </div>
+
+    {% if activities is not None %}
+    <div class="card">
+      <div class="card-header"><h2>Recent activity</h2></div>
+      <div class="card-body">{% include "components/activity_feed.html" with activities=activities show_actor=True %}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if can_manage and member.is_active %}
+{% url 'members:deactivate' member.pk as deactivate_url %}
+{% include "components/reason_modal.html" with id="deactivateModal" action=deactivate_url title="Deactivate member?" message="The member's history is kept. Any current or scheduled membership must be cancelled first. A linked portal login is also disabled." button_label="Deactivate" button_class="btn-danger" placeholder="e.g. Moved away" %}
+{% endif %}
+{% endblock %}

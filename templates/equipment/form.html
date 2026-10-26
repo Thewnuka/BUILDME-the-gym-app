@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card"><div class="card-header"><h2>Equipment</h2></div><div class="card-body"><div class="row g-3">
+        {% form_field form.code "col-md-4" %}{% form_field form.name "col-md-8" %}{% form_field form.category "col-md-6" %}{% form_field form.location "col-md-6" %}
+        {% form_field form.brand_model "col-md-6" %}{% form_field form.serial_number "col-md-6" %}{% form_field form.status "col-md-6" %}{% form_field form.condition "col-md-6" %}
+      </div></div></div>
+      <div class="card mt-4"><div class="card-header"><h2>Purchase &amp; warranty</h2></div><div class="card-body"><div class="row g-3">
+        {% form_field form.purchase_date "col-md-4" %}{% form_field form.purchase_cost "col-md-4" %}{% form_field form.supplier "col-md-4" %}
+        {% form_field form.warranty_expires "col-md-4" %}{% form_field form.warranty_notes "col-md-8" %}
+      </div></div></div>
+      <div class="card mt-4"><div class="card-header"><h2>Maintenance</h2></div><div class="card-body"><div class="row g-3">
+        {% form_field form.maintenance_interval_days "col-md-6" %}{% form_field form.next_maintenance_date "col-md-6" %}{% form_field form.notes %}
+      </div></div></div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card mb-4"><div class="card-body small text-muted"><i class="bi bi-info-circle text-primary me-1"></i>A purchase cost is recorded <strong>once</strong>, as a linked "Equipment purchases" expense (capital spending in reports). Leave the code blank to generate one like EQ-0001.</div></div>
+      <div class="d-grid gap-2"><button class="btn btn-primary" data-loading-text="Saving…">Save</button><a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'equipment:list' %}{% endif %}" class="btn btn-light border">Cancel</a></div>
+    </div>
+  </div>
+</form>
+{% endblock %}

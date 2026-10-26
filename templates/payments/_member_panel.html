@@ -1,0 +1,44 @@
+{% load ui_tags %}
+{% if visible %}
+<div class="card h-100">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h2><i class="bi bi-credit-card me-1 text-primary"></i>Payments</h2>
+    {% if outstanding %}<span class="badge bg-danger-subtle text-danger-emphasis">{{ outstanding|money }} outstanding</span>{% else %}<span class="badge bg-success-subtle text-success-emphasis">Nothing outstanding</span>{% endif %}
+  </div>
+  {% if unpaid or unpaid_sessions %}{% if can_record %}
+  <div class="card-body pb-0">
+    {% for m in unpaid %}
+    <div class="d-flex justify-content-between align-items-center small mb-2 gap-2">
+      <span>{{ m.plan_name }} ({{ m.start_date|date:"d M" }} – {{ m.end_date|date:"d M Y" }}): <strong>{{ m.outstanding|money }}</strong> due</span>
+      <a href="{% url 'payments:record' m.pk %}" class="btn btn-sm btn-primary text-nowrap">Record payment</a>
+    </div>
+    {% endfor %}
+    {% for s in unpaid_sessions %}
+    <div class="d-flex justify-content-between align-items-center small mb-2 gap-2">
+      <span>{{ s.session_type.name }} ({{ s.starts_at|date:"d M" }}): <strong>{{ s.outstanding|money }}</strong> due</span>
+      <a href="{% url 'payments:record_session' s.pk %}" class="btn btn-sm btn-primary text-nowrap">Record payment</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}{% endif %}
+  {% if payments %}
+  <ul class="list-group list-group-flush">
+    {% for p in payments %}
+    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+      <div class="min-w-0 small">
+        <div class="fw-semibold{% if p.is_refund %} text-danger{% endif %}">{% if p.is_refund %}Refund −{% endif %}{{ p.amount|money }} <span class="fw-normal text-muted">· {{ p.get_method_display }}</span></div>
+        <div class="text-muted">{{ p.paid_on|date:"d M Y" }} · <span class="font-monospace">{{ p.reference }}</span>{% if p.status == "pending" %} · <span class="text-warning-emphasis">pending</span>{% endif %}</div>
+      </div>
+      <div class="d-flex gap-1">
+        {% if p.receipt_number %}<a href="{% url 'payments:receipt' p.pk %}" class="btn btn-sm btn-light border" title="View receipt"><i class="bi bi-printer"></i><span class="visually-hidden">Receipt</span></a>
+        <a href="{% url 'payments:receipt_pdf' p.pk %}" class="btn btn-sm btn-light border" title="Download PDF"><i class="bi bi-file-earmark-pdf"></i><span class="visually-hidden">PDF</span></a>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if is_staff_view %}<div class="card-body pt-2"><a href="{% url 'payments:list' %}?q={{ member.member_id }}" class="small fw-semibold">All transactions</a></div>{% endif %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="credit-card" title="No payments yet" message="Payments recorded for this member's memberships will appear here." %}
+  {% endif %}
+</div>
+{% endif %}

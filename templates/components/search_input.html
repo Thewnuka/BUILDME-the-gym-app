@@ -1,0 +1,8 @@
+{% comment %}
+Usage: {% include "components/search_input.html" with value=filters.q placeholder="Search users" %}
+Must be placed inside a GET <form>.
+{% endcomment %}
+<div class="input-group">
+  <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+  <input type="search" name="q" value="{{ value }}" class="form-control border-start-0 ps-0" placeholder="{{ placeholder|default:'Search…' }}" aria-label="{{ placeholder|default:'Search' }}" maxlength="100">
+</div>

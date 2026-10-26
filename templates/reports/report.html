@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{{ report.description }} {% if report.uses_dates %}{{ params.date_from|date:"d M Y" }} – {{ params.date_to|date:"d M Y" }}.{% else %}As at today.{% endif %}</p>{% endblock %}
+{% block page_actions %}
+<a href="?{{ request.GET.urlencode }}&amp;print=1" target="_blank" rel="noopener" class="btn btn-light border"><i class="bi bi-printer me-1"></i>Print</a>
+<a href="?{{ request.GET.urlencode }}&amp;export=csv" class="btn btn-light border"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+<a href="?{{ request.GET.urlencode }}&amp;export=pdf" class="btn btn-light border"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">{% include "reports/_filters.html" %}</div></div>
+{% if summary %}
+<div class="row g-3 mb-3">{% for label, value in summary %}<div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><div class="stat-label">{{ label }}</div><div class="stat-value stat-value-sm">{{ value }}</div></div></div></div>{% endfor %}</div>
+{% endif %}
+{% if report.notes %}<div class="alert alert-light border small"><i class="bi bi-info-circle me-1"></i>{{ report.notes }}</div>{% endif %}
+{% if chart and row_count %}
+<div class="card mb-3"><div class="card-body"><div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="reportChart" role="img" aria-label="{{ report.title }} chart"></canvas></div></div></div>
+{{ chart|json_script:"reportChartData" }}
+{% endif %}
+<div class="card table-card">
+  <div class="card-body border-bottom small text-muted">{{ row_count }} row{{ row_count|pluralize }} · generated {{ generated|date:"d M Y H:i" }}</div>
+  {% if table %}
+  <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead><tr>{% for c in report.columns %}<th class="text-{{ c.align }}">{{ c.label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in table %}<tr>{% for value, align in row.cells %}<td class="text-{{ align }}{% if align == 'end' %} text-nowrap{% endif %}">{% if forloop.first and row.url %}<a href="{{ row.url }}">{{ value }}</a>{% else %}{{ value }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="inbox" title="No data for these filters" message="Try a wider date range." %}{% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if chart and row_count %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var data = JSON.parse(document.getElementById("reportChartData").textContent);
+    if (data.type === "multi") {
+      var el = document.getElementById("reportChartData");
+      el.textContent = JSON.stringify({ labels: data.labels, datasets: data.datasets });
+      GymCharts.multi("reportChart", "reportChartData");
+    } else {
+      GymCharts.bar("reportChart", "reportChartData", { label: data.label });
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

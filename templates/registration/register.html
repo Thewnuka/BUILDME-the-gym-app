@@ -1,0 +1,28 @@
+{% extends "layouts/auth.html" %}
+{% load ui_tags %}
+{% block title %}Create account · {{ GYM_NAME }}{% endblock %}
+{% block auth_content %}
+<h2 class="mb-1">Create your account</h2>
+<p class="text-muted mb-4">Join {{ GYM_NAME }} to manage your profile and membership.</p>
+
+{% include "components/form_errors.html" %}
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="row g-3">
+    {% form_field form.full_name %}
+    {% form_field form.username "col-sm-6" %}
+    {% form_field form.email "col-sm-6" %}
+    {% form_field form.password1 %}
+    {% form_field form.password2 %}
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary w-100 py-2" data-loading-text="Creating account…">
+        <i class="bi bi-person-plus me-1"></i> Create account
+      </button>
+    </div>
+  </div>
+</form>
+<p class="text-center text-muted small mt-4 mb-0">
+  Already have an account? <a href="{% url 'accounts:login' %}" class="fw-semibold">Sign in</a>
+</p>
+{% endblock %}

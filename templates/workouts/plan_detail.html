@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{% if plan.member %}{{ plan.member.full_name }} · {{ plan.start_date|date:"d M Y" }}{% if plan.end_date %} – {{ plan.end_date|date:"d M Y" }}{% endif %}{% else %}Template{% endif %}{% if plan.goal %} · {{ plan.goal }}{% endif %}</p>{% endblock %}
+{% block page_actions %}
+{% if editable %}<a href="{% url 'workouts:plan_update' plan.pk %}" class="btn btn-light border"><i class="bi bi-pencil me-1"></i>Edit details</a>
+{% if plan.member %}<form method="post" data-keep-scroll action="{% url 'workouts:plan_archive' plan.pk %}">{% csrf_token %}<button class="btn btn-outline-secondary" data-confirm="Archive this plan? It stays in the member's history and logged workouts are kept." data-confirm-label="Archive">Archive</button></form>{% endif %}{% endif %}
+{% endblock %}
+{% block content %}
+{% if plan.status == "archived" %}<div class="alert alert-secondary">This plan is archived and kept for history.</div>{% endif %}
+{% if plan.source and editable %}<div class="alert alert-info small">Copied from template <strong>{{ plan.source.name }}</strong>. Changes here affect only this member's plan.</div>{% endif %}
+{% if plan.description %}<p>{{ plan.description|linebreaksbr }}</p>{% endif %}
+<div class="row g-4">
+  <div class="col-xl-8 d-flex flex-column gap-4">
+    {% for day in days %}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h2>{{ day }}</h2>
+        <div class="d-flex gap-2">
+          {% if can_log %}<a href="{% url 'workouts:log' plan.pk day.pk %}" class="btn btn-sm btn-success"><i class="bi bi-check2-square me-1"></i>Log workout</a>{% endif %}
+          {% if editable %}<form method="post" data-keep-scroll action="{% url 'workouts:day_delete' plan.pk day.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" aria-label="Remove {{ day }}" data-confirm="Remove {{ day }} and its exercises from this plan?" data-confirm-label="Remove" data-confirm-class="btn-danger"><i class="bi bi-trash"></i></button></form>{% endif %}
+        </div>
+      </div>
+      {% if day.items.all %}
+      <ul class="list-group list-group-flush">
+        {% for item in day.items.all %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div><a href="{{ item.exercise.get_absolute_url }}" class="fw-semibold">{{ item.exercise.name }}</a> <span class="text-muted small">{{ item.exercise.get_muscle_group_display }}</span>
+              <div>{{ item.prescription }}</div>{% if item.notes %}<div class="small text-muted">{{ item.notes }}</div>{% endif %}</div>
+            {% if editable %}
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="collapse" data-bs-target="#edit{{ item.pk }}" aria-label="Edit {{ item.exercise.name }}"><i class="bi bi-pencil"></i></button>
+              <form method="post" data-keep-scroll action="{% url 'workouts:item_delete' plan.pk item.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" aria-label="Remove {{ item.exercise.name }}"><i class="bi bi-x-lg"></i></button></form>
+            </div>
+            {% endif %}
+          </div>
+          {% if editable %}
+          <form method="post" data-keep-scroll action="{% url 'workouts:item_update' plan.pk item.pk %}" class="collapse row g-2 mt-2 align-items-end" id="edit{{ item.pk }}">{% csrf_token %}
+            <input type="hidden" name="exercise" value="{{ item.exercise_id }}">
+            <div class="col-4 col-md-2"><label class="form-label small">Sets</label><input type="number" min="1" name="sets" value="{{ item.sets|default_if_none:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-4 col-md-2"><label class="form-label small">Reps</label><input type="number" min="1" name="reps" value="{{ item.reps|default_if_none:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-4 col-md-2"><label class="form-label small">Kg</label><input type="number" min="0" step="0.5" name="weight_kg" value="{{ item.weight_kg|default_if_none:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-4 col-md-2"><label class="form-label small">Seconds</label><input type="number" min="0" name="duration_seconds" value="{{ item.duration_seconds|default_if_none:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-4 col-md-2"><label class="form-label small">Rest (s)</label><input type="number" min="0" name="rest_seconds" value="{{ item.rest_seconds|default_if_none:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-4 col-md-2"><label class="form-label small">Order</label><input type="number" min="1" name="order" value="{{ item.order }}" class="form-control form-control-sm"></div>
+            <div class="col-md-9"><input type="text" name="notes" value="{{ item.notes }}" maxlength="255" class="form-control form-control-sm" placeholder="Notes" aria-label="Notes"></div>
+            <div class="col-md-3"><button class="btn btn-sm btn-primary w-100">Save</button></div>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No exercises yet.</div>{% endif %}
+      {% if editable %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'workouts:item_add' plan.pk day.pk %}" class="row g-2 align-items-end">{% csrf_token %}
+          <div class="col-md-4"><label class="form-label small">Exercise</label>{{ item_form.exercise }}</div>
+          <div class="col-3 col-md-1"><label class="form-label small">Sets</label>{{ item_form.sets }}</div>
+          <div class="col-3 col-md-1"><label class="form-label small">Reps</label>{{ item_form.reps }}</div>
+          <div class="col-3 col-md-2"><label class="form-label small">Kg</label>{{ item_form.weight_kg }}</div>
+          <div class="col-3 col-md-2"><label class="form-label small">Seconds</label>{{ item_form.duration_seconds }}</div>
+          <div class="col-6 col-md-2"><label class="form-label small">Rest (s)</label>{{ item_form.rest_seconds }}</div>
+          <input type="hidden" name="order" value="{{ day.items.count|add:1 }}">
+          <div class="col-md-9"><input type="text" name="notes" maxlength="255" class="form-control" placeholder="Notes (optional)" aria-label="Notes"></div>
+          <div class="col-md-3"><button class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Add exercise</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="card">{% include "components/empty_state.html" with icon="calendar3" title="No training days yet" message="Add Day 1 to start building the plan." %}</div>
+    {% endfor %}
+    {% if editable %}
+    <div class="card"><div class="card-body">
+      <form method="post" data-keep-scroll action="{% url 'workouts:day_add' plan.pk %}" class="row g-2 align-items-end">{% csrf_token %}
+        <div class="col-4 col-md-2"><label class="form-label small" for="id_day_number">Day</label>{{ day_form.day_number }}</div>
+        <div class="col-8 col-md-7"><label class="form-label small" for="id_title">Title</label>{{ day_form.title }}</div>
+        <div class="col-md-3"><button class="btn btn-light border w-100"><i class="bi bi-plus-lg me-1"></i>Add day</button></div>
+      </form>
+    </div></div>
+    {% endif %}
+  </div>
+  <div class="col-xl-4 d-flex flex-column gap-4">
+    {% if assign_form %}
+    <div class="card"><div class="card-header"><h2>Assign to a member</h2></div><div class="card-body">
+      <form method="post" data-keep-scroll action="{% url 'workouts:plan_assign' plan.pk %}" class="row g-2">{% csrf_token %}
+        <div class="col-12">{{ assign_form.member }}</div>
+        <div class="col-6"><label class="form-label small">Start</label>{{ assign_form.start_date }}</div>
+        <div class="col-6"><label class="form-label small">End (optional)</label>{{ assign_form.end_date }}</div>
+        <div class="col-12"><button class="btn btn-primary w-100">Assign a copy</button></div>
+      </form>
+      <p class="small text-muted mt-2 mb-0">The member gets their own copy, so later changes to this template don't alter it. Trainers can assign only to their own members.</p>
+    </div></div>
+    {% endif %}
+    {% if logs %}
+    <div class="card"><div class="card-header"><h2>Recent workouts</h2></div>
+      <ul class="list-group list-group-flush small">{% for log in logs %}<li class="list-group-item"><div class="fw-semibold">{{ log.performed_on|date:"D d M" }} · {{ log.day_label }}</div>{% for e in log.entries.all %}<div class="{% if not e.completed %}text-muted text-decoration-line-through{% endif %}">{{ e.exercise_name }}: {% if e.sets_done %}{{ e.sets_done }}×{{ e.reps_done|default:"?" }}{% if e.weight_kg %} @ {{ e.weight_kg }} kg{% endif %}{% else %}done{% endif %} <span class="text-muted">(planned {{ e.planned }})</span></div>{% endfor %}{% if log.notes %}<div class="text-muted">{{ log.notes }}</div>{% endif %}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

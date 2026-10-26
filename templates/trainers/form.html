@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            {% for field in form %}
+              {% if field.name in "bio qualifications" %}{% form_field field %}{% else %}{% form_field field "col-md-6" %}{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      {% if is_create %}
+      <div class="card mb-4"><div class="card-body small text-muted"><i class="bi bi-envelope me-1 text-primary"></i>The trainer gets a <strong>Trainer</strong> login and an email link to set their own password. Their profile, availability and certificates can be completed afterwards.</div></div>
+      {% endif %}
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>{% if is_create %}Create trainer{% else %}Save profile{% endif %}</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'trainers:list' %}{% endif %}" class="btn btn-light border">Cancel</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

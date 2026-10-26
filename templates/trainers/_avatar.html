@@ -1,0 +1,1 @@
+<span class="avatar{% if size %} avatar-{{ size }}{% endif %}">{{ t.initials }}{% if t.photo %}<img src="{% url 'trainers:photo' t.pk %}" alt="Photo of {{ t.name }}" loading="lazy">{% endif %}</span>

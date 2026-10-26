@@ -1,0 +1,5 @@
+{% extends "errors/_error.html" %}
+{% block title %}Access denied · {{ GYM_NAME|default:"BUILDME" }}{% endblock %}
+{% block code %}403{% endblock %}
+{% block heading %}Access denied{% endblock %}
+{% block message %}Your role doesn't have permission to view this page. If you think this is a mistake, contact your administrator.{% endblock %}

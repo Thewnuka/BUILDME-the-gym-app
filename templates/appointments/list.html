@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Personal training sessions{% if not perms.accounts.manage_appointments %} on your schedule{% endif %}.</p>{% endblock %}
+{% block page_actions %}
+{% if can_book %}<a href="{% url 'appointments:book' %}" class="btn btn-primary"><i class="bi bi-calendar-plus me-1"></i>Book session</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-4">{% include "components/search_input.html" with value=filters.q placeholder="Member name or ID" %}</div>
+      <div class="col-6 col-md-2"><select name="scope" class="form-select" data-auto-submit aria-label="Time"><option value="upcoming"{% if filters.scope == "upcoming" %} selected{% endif %}>Upcoming</option><option value="past"{% if filters.scope == "past" %} selected{% endif %}>Past</option><option value="all"{% if filters.scope == "all" %} selected{% endif %}>All</option></select></div>
+      <div class="col-6 col-md-2"><select name="status" class="form-select" data-auto-submit aria-label="Status"><option value="">Any status</option>{% for v, l in statuses %}<option value="{{ v }}"{% if filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      {% if trainers %}<div class="col-8 col-md-2"><select name="trainer" class="form-select" data-auto-submit aria-label="Trainer"><option value="">All trainers</option>{% for t in trainers %}<option value="{{ t.pk }}"{% if filters.trainer == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></div>{% endif %}
+      <div class="col-4 col-md-2"><button type="submit" class="btn btn-dark w-100" data-no-loading>Apply</button></div>
+    </form>
+  </div>
+  {% if appointments %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>When</th><th>Member</th><th>Trainer</th><th class="d-none d-md-table-cell">Session</th><th class="text-end d-none d-lg-table-cell">Fee</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td class="text-nowrap"><div class="fw-semibold">{{ a.starts_at|date:"D d M" }}</div><div class="small text-muted">{{ a.starts_at|time:"H:i" }}–{{ a.ends_at|time:"H:i" }}</div></td>
+          <td><a href="{{ a.member.get_absolute_url }}" class="text-body">{{ a.member.full_name }}</a></td>
+          <td>{{ a.trainer.name }}</td>
+          <td class="d-none d-md-table-cell small">{{ a.session_type.name }}</td>
+          <td class="text-end d-none d-lg-table-cell text-nowrap small">{% if a.fee %}{{ a.fee|money }}{% else %}—{% endif %}</td>
+          <td>{% include "appointments/_badge.html" %}</td>
+          <td class="text-end"><a href="{{ a.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="calendar-week" title="No sessions found" message="Booked training sessions will appear here." %}
+  {% endif %}
+</div>
+{% endblock %}

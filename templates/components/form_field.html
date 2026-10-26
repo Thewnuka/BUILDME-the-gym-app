@@ -1,0 +1,56 @@
+{% comment %}
+Usage: {% load ui_tags %}{% form_field form.email "col-md-6" %}
+Renders label, widget, help text and validation errors with Bootstrap styling.
+{% endcomment %}
+{% with widget_type=field.widget_type %}
+<div class="{{ col|default:'col-12' }}">
+  {% if widget_type == "checkbox" %}
+    <div class="form-check form-switch">
+      {{ field }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+      {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+  {% elif widget_type == "checkboxselectmultiple" %}
+    <fieldset>
+      <legend class="form-label fs-6">{{ field.label }}</legend>
+      <div class="d-flex flex-wrap gap-3">
+      {% for box in field %}
+      <div class="form-check">
+        {{ box.tag }}
+        <label class="form-check-label" for="{{ box.id_for_label }}">{{ box.choice_label }}</label>
+      </div>
+      {% endfor %}
+      </div>
+      {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+      {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </fieldset>
+  {% elif widget_type == "radioselect" %}
+    <fieldset>
+      <legend class="form-label fs-6">{{ field.label }}</legend>
+      {% for radio in field %}
+      <div class="form-check">
+        {{ radio.tag }}
+        <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+      </div>
+      {% endfor %}
+      {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </fieldset>
+  {% else %}
+    <label class="form-label" for="{{ field.id_for_label }}">
+      {{ field.label }}{% if field.field.required %} <span class="required-mark" aria-hidden="true">*</span>{% endif %}
+    </label>
+    {% if widget_type == "password" %}
+      <div class="input-group has-validation">
+        {{ field }}
+        <button class="btn btn-light border" type="button" data-password-toggle="{{ field.id_for_label }}" aria-label="Show password"><i class="bi bi-eye"></i></button>
+        {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      </div>
+    {% else %}
+      {{ field }}
+      {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    {% endif %}
+    {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+  {% endif %}
+</div>
+{% endwith %}

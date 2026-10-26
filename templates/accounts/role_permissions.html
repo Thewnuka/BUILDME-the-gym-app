@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Choose which modules and actions each role can access. Changes apply immediately to every user with that role.</p>{% endblock %}
+{% block content %}
+<form method="post" data-keep-scroll>
+  {% csrf_token %}
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="table perm-matrix align-middle">
+        <thead>
+          <tr>
+            <th>Permission</th>
+            {% for col in role_columns %}
+            <th class="role-col">
+              <div>{{ col.label }}</div>
+              <div class="fw-normal text-lowercase" style="letter-spacing:0">{{ col.count }} user{{ col.count|pluralize }}</div>
+              {% if not col.locked %}
+              <input type="checkbox" class="form-check-input mt-1" data-toggle-column="{{ col.value }}" aria-label="Toggle all permissions for {{ col.label }}">
+              {% endif %}
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for module, perms in modules.items %}
+          <tr class="module-row"><td colspan="{{ role_columns|length|add:1 }}">{{ module }}</td></tr>
+          {% for perm in perms %}
+          <tr>
+            <td>{{ perm.name }}</td>
+            {% for cell in perm.cells %}
+            <td class="perm-cell">
+              <input type="checkbox" class="form-check-input"
+                     {% if cell.locked %}{% if cell.checked %}checked {% endif %}disabled title="{% if cell.checked %}Super Admin always has full access{% else %}Members use their own portal and can't be given staff permissions{% endif %}"{% else %}name="perm_{{ cell.role.value }}" value="{{ perm.codename }}" data-column="{{ cell.role.value }}"{% if cell.checked %} checked{% endif %}{% endif %}
+                     aria-label="{{ perm.name }} for {{ cell.role.label }}">
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <small class="text-muted"><i class="bi bi-lock me-1"></i>Super Admin permissions and the ability to manage roles can't be delegated. The Member role is portal-only: members always see just their own data.</small>
+      <button type="submit" class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>Save permissions</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

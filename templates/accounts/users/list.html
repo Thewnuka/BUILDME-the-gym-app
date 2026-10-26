@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Staff and member accounts, roles and access status.</p>{% endblock %}
+{% block page_actions %}
+{% if can_manage %}
+<a href="{% url 'accounts:user_create' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Add user</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-5">{% include "components/search_input.html" with value=filters.q placeholder="Search name, username, email or phone" %}</div>
+      <div class="col-6 col-md-3">
+        <select name="role" class="form-select" data-auto-submit aria-label="Filter by role">
+          <option value="">All roles</option>
+          {% for value, label in roles %}<option value="{{ value }}"{% if filters.role == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="status" class="form-select" data-auto-submit aria-label="Filter by status">
+          <option value="">Any status</option>
+          <option value="active"{% if filters.status == "active" %} selected{% endif %}>Active</option>
+          <option value="inactive"{% if filters.status == "inactive" %} selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Search</button>
+        {% if is_filtered %}<a href="{% url 'accounts:user_list' %}" class="btn btn-light border" title="Clear filters" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if users %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr><th>User</th><th>Role</th><th class="d-none d-md-table-cell">Phone</th><th>Status</th><th class="d-none d-lg-table-cell">Last sign-in</th><th class="text-end">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="avatar avatar-sm">{{ u.initials }}</span>
+              <div class="min-w-0">
+                <a href="{{ u.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ u }}</a>
+                <div class="small text-muted text-truncate">{{ u.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{% include "components/role_badge.html" %}</td>
+          <td class="d-none d-md-table-cell">{{ u.phone|default:"—" }}</td>
+          <td>{% include "components/status_badge.html" %}</td>
+          <td class="d-none d-lg-table-cell text-muted small">{% if u.last_login %}{{ u.last_login|timesince }} ago{% else %}Never{% endif %}</td>
+          <td class="text-end"><a href="{{ u.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% elif is_filtered %}
+    {% url 'accounts:user_list' as reset_url %}
+    {% include "components/empty_state.html" with icon="search" title="No matching users" message="Try a different search term or clear the filters." action_url=reset_url action_label="Clear filters" action_icon="x-lg" %}
+  {% else %}
+    {% url 'accounts:user_create' as create_url %}
+    {% include "components/empty_state.html" with icon="people" title="No users yet" message="Create the first staff or member account." action_url=create_url action_label="Add user" %}
+  {% endif %}
+</div>
+{% endblock %}

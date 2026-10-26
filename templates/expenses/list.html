@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Operating costs and purchases. Voided entries stay in the records but don't count in totals.</p>{% endblock %}
+{% block page_actions %}
+<a href="{% url 'expenses:suppliers' %}" class="btn btn-light border"><i class="bi bi-truck me-1"></i>Suppliers</a>
+<a href="{% url 'reports:report' 'expenses' %}" class="btn btn-light border"><i class="bi bi-file-earmark-bar-graph me-1"></i>Report</a>
+{% if perms.accounts.manage_expenses %}<a href="{% url 'expenses:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Record expense</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-end" role="search">
+      <div class="col-lg-6"><label class="form-label small" for="q">Search</label>{% include "components/search_input.html" with value=filters.q placeholder="Description, ref or supplier" %}</div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="date_from">From</label><input type="date" name="date_from" id="date_from" class="form-control" value="{{ filters.date_from|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="date_to">To</label><input type="date" name="date_to" id="date_to" class="form-control" value="{{ filters.date_to|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="category">Category</label><select name="category" id="category" class="form-select" data-auto-submit><option value="">All</option>{% for v, l in categories %}<option value="{{ v }}"{% if filters.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="supplier">Supplier</label><select name="supplier" id="supplier" class="form-select" data-auto-submit><option value="">All</option>{% for s in suppliers %}<option value="{{ s.pk }}"{% if filters.supplier == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="status">Status</label><select name="status" id="status" class="form-select" data-auto-submit><option value="active"{% if filters.status == "active" %} selected{% endif %}>Active</option><option value="voided"{% if filters.status == "voided" %} selected{% endif %}>Voided</option><option value="all"{% if filters.status == "all" %} selected{% endif %}>All</option></select></div>
+      <div class="col-6 col-md-3"><button class="btn btn-dark w-100" data-no-loading>Apply</button></div>
+    </form>
+  </div>
+  <div class="card-body border-bottom d-flex justify-content-between"><span class="text-muted small">{{ page_obj.paginator.count }} entr{{ page_obj.paginator.count|pluralize:"y,ies" }}</span><span>Total (active): <strong>{{ total|money }}</strong></span></div>
+  {% if expenses %}
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>Date</th><th>Reference</th><th>Category</th><th>Description</th><th class="d-none d-md-table-cell">Supplier</th><th class="text-end">Amount</th><th class="d-none d-lg-table-cell">Recorded by</th></tr></thead>
+    <tbody>{% for e in expenses %}
+      <tr{% if e.status == "voided" %} class="text-muted"{% endif %}>
+        <td class="text-nowrap small">{{ e.expense_date|date:"d M Y" }}</td>
+        <td><a href="{{ e.get_absolute_url }}" class="font-monospace small">{{ e.reference }}</a>{% if e.is_linked %} <span class="badge bg-info-subtle text-info-emphasis" title="{{ e.get_source_display }}">linked</span>{% endif %}{% if e.status == "voided" %} <span class="badge bg-secondary-subtle text-secondary-emphasis">void</span>{% endif %}</td>
+        <td class="small">{{ e.get_category_display }}</td>
+        <td>{{ e.description }}{% if e.receipt %} <i class="bi bi-paperclip text-muted" title="Receipt attached"></i>{% endif %}</td>
+        <td class="d-none d-md-table-cell small">{{ e.supplier.name|default:"—" }}</td>
+        <td class="text-end text-nowrap{% if e.status == 'voided' %} text-decoration-line-through{% endif %}">{{ e.amount|money }}</td>
+        <td class="d-none d-lg-table-cell small">{{ e.recorded_by }}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="receipt-cutoff" title="No expenses found" message="Record rent, bills, payroll and other costs here." %}{% endif %}
+</div>
+{% endblock %}

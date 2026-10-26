@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card">
+        <div class="card-header"><h2>Account details</h2></div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% form_field form.first_name "col-md-6" %}
+            {% form_field form.last_name "col-md-6" %}
+            {% form_field form.username "col-md-6" %}
+            {% form_field form.email "col-md-6" %}
+            {% form_field form.phone "col-md-6" %}
+            {% form_field form.role "col-md-6" %}
+          </div>
+        </div>
+      </div>
+      {% if not object %}
+      <div class="card mt-4">
+        <div class="card-header"><h2>Access</h2></div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% form_field form.password_method %}
+            {% form_field form.password1 "col-md-6" %}
+            {% form_field form.password2 "col-md-6" %}
+            {% form_field form.is_active %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-xl-4">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="h5"><i class="bi bi-shield-check text-primary me-1"></i>About roles</h2>
+          <p class="text-muted small mb-2">Each role grants access only to its modules. You can assign roles below your own level.</p>
+          <ul class="small text-muted ps-3 mb-0">
+            <li><strong>Gym Manager</strong> – day-to-day operations and staff</li>
+            <li><strong>Receptionist</strong> – members, check-ins, payments</li>
+            <li><strong>Trainer</strong> – training programs and attendance</li>
+            <li><strong>Accountant</strong> – payments and financial reports</li>
+            <li><strong>Member</strong> – own profile and information only</li>
+          </ul>
+        </div>
+      </div>
+      <div class="d-grid gap-2 mt-4">
+        <button type="submit" class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>{% if object %}Save changes{% else %}Create user{% endif %}</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'accounts:user_list' %}{% endif %}" class="btn btn-light border">Cancel</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+{% if not object %}
+<script>
+  (function () {
+    var radios = document.querySelectorAll('input[name="password_method"]');
+    var fields = ["id_password1", "id_password2"].map(function (id) { return document.getElementById(id).closest(".col-md-6"); });
+    function sync() {
+      var setNow = document.querySelector('input[name="password_method"]:checked').value === "set";
+      fields.forEach(function (f) { f.classList.toggle("d-none", !setNow); });
+    }
+    radios.forEach(function (r) { r.addEventListener("change", sync); });
+    sync();
+  })();
+</script>
+{% endif %}
+{% endblock %}

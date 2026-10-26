@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ appointment.starts_at|date:"l d F Y, H:i" }}–{{ appointment.ends_at|time:"H:i" }}</p>{% endblock %}
+{% block page_actions %}
+{% if can_reschedule %}<a href="{% url 'appointments:reschedule' appointment.pk %}" class="btn btn-outline-primary"><i class="bi bi-calendar-event me-1"></i>Reschedule</a>{% endif %}
+{% if can_close %}
+<form method="post" action="{% url 'appointments:outcome' appointment.pk %}">{% csrf_token %}<input type="hidden" name="outcome" value="completed"><button class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Mark completed</button></form>
+<form method="post" action="{% url 'appointments:outcome' appointment.pk %}">{% csrf_token %}<input type="hidden" name="outcome" value="no_show"><button class="btn btn-outline-warning" data-confirm="Record that the member did not attend?" data-confirm-title="Mark as no-show?" data-confirm-label="Mark no-show" data-confirm-class="btn-warning">No-show</button></form>
+{% endif %}
+{% if can_cancel %}<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-x-circle me-1"></i>Cancel</button>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>{{ appointment.session_type.name }}</h2>{% include "appointments/_badge.html" with a=appointment %}</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-6"><dl class="detail-list">
+            <dt>Member</dt><dd><a href="{{ appointment.member.get_absolute_url }}">{{ appointment.member.full_name }}</a> <span class="small text-muted font-monospace">{{ appointment.member.member_id }}</span></dd>
+            <dt>Trainer</dt><dd><a href="{{ appointment.trainer.get_absolute_url }}">{{ appointment.trainer.name }}</a></dd>
+            <dt>Duration</dt><dd>{{ appointment.duration_minutes }} minutes</dd>
+          </dl></div>
+          <div class="col-sm-6"><dl class="detail-list">
+            <dt>Fee</dt><dd>{% if appointment.fee %}{{ appointment.fee|money }}{% else %}No fee{% endif %}</dd>
+            <dt>Booked</dt><dd>{{ appointment.created_at|date:"d M Y H:i" }}{% if appointment.booked_by %} by {{ appointment.booked_by }}{% endif %}</dd>
+            {% if appointment.notes %}<dt>Notes</dt><dd>{{ appointment.notes }}</dd>{% endif %}
+          </dl></div>
+        </div>
+        {% if appointment.status == "cancelled" %}<div class="alert alert-secondary small mb-0">Cancelled {{ appointment.cancelled_at|date:"d M Y H:i" }}: {{ appointment.cancellation_reason }}</div>{% endif %}
+      </div>
+    </div>
+    {% if balance %}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>Session fee</h2>{% include "payments/_balance_badge.html" with b=balance %}</div>
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="row g-3 text-center flex-grow-1">
+          <div class="col-4"><div class="stat-label">Due</div><div class="fw-bold">{{ balance.charge|money }}</div></div>
+          <div class="col-4"><div class="stat-label">Paid</div><div class="fw-bold text-success">{{ balance.net_paid|money }}</div></div>
+          <div class="col-4"><div class="stat-label">Outstanding</div><div class="fw-bold {% if balance.outstanding %}text-danger{% endif %}">{{ balance.outstanding|money }}</div></div>
+        </div>
+        {% if can_pay %}<a href="{% url 'payments:record_session' appointment.pk %}" class="btn btn-primary"><i class="bi bi-cash-coin me-1"></i>Record payment</a>{% endif %}
+      </div>
+      {% if can_view_payments and appointment.payments.exists %}
+      <ul class="list-group list-group-flush small">{% for p in appointment.payments.all %}<li class="list-group-item d-flex justify-content-between"><a href="{{ p.get_absolute_url }}" class="font-monospace">{{ p.reference }}</a><span>{% if p.is_refund %}−{% endif %}{{ p.amount|money }} · {{ p.get_status_display }}</span></li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h2>History</h2></div>
+      <div class="card-body">
+        <ul class="timeline">
+          {% for e in events %}<li><span class="activity-icon bg-primary-subtle text-primary-emphasis"><i class="bi bi-calendar-event"></i></span><div class="fw-semibold">{{ e.get_event_type_display }}</div>{% if e.note %}<div class="small">{{ e.note }}</div>{% endif %}<div class="activity-meta">{{ e.created_at|date:"d M Y H:i" }}{% if e.performed_by %} · {{ e.performed_by }}{% endif %}</div></li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% if can_cancel %}{% url 'appointments:cancel' appointment.pk as cancel_url %}{% include "components/reason_modal.html" with id="cancelModal" action=cancel_url title="Cancel this session?" message="The member and trainer are notified. Any fee already paid must be refunded through payments." button_label="Cancel session" button_class="btn-danger" placeholder="e.g. Trainer unwell" %}{% endif %}
+{% endblock %}

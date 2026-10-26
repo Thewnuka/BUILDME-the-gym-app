@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ trainer.get_employment_type_display }}{% if trainer.hired_on %} · since {{ trainer.hired_on|date:"M Y" }}{% endif %}</p>{% endblock %}
+{% block page_actions %}
+{% if perms.accounts.manage_appointments %}<a href="{% url 'appointments:book' %}?trainer={{ trainer.pk }}" class="btn btn-outline-primary"><i class="bi bi-calendar-plus me-1"></i>Book session</a>{% endif %}
+{% if can_edit %}<a href="{% url 'trainers:update' trainer.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit profile</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-body text-center py-4">
+        {% include "trainers/_avatar.html" with t=trainer size="xl" %}
+        <h2 class="h4 mt-3 mb-1">{{ trainer.name }}</h2>
+        <span class="badge bg-{{ trainer.status_badge }}-subtle text-{{ trainer.status_badge }}-emphasis">{{ trainer.get_employment_status_display }}</span>
+        <div class="d-flex flex-wrap justify-content-center gap-1 mt-3">{% for s in trainer.specialty_list %}<span class="badge bg-primary-subtle text-primary-emphasis">{{ s }}</span>{% endfor %}</div>
+      </div>
+      <div class="card-body border-top">
+        <dl class="detail-list mb-0">
+          <dt>Email</dt><dd class="text-break">{{ trainer.user.email }}</dd>
+          <dt>Phone</dt><dd>{{ trainer.phone|default:"—" }}</dd>
+          <dt>Completed sessions</dt><dd class="mb-0">{{ completed_count }}</dd>
+        </dl>
+      </div>
+      {% if trainer.bio or trainer.qualification_list %}
+      <div class="card-body border-top small">
+        {% if trainer.bio %}<p>{{ trainer.bio|linebreaksbr }}</p>{% endif %}
+        {% if trainer.qualification_list %}<div class="stat-label mb-1">Qualifications</div><ul class="benefit-list mb-0">{% for q in trainer.qualification_list %}<li>{{ q }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Weekly availability</h2></div>
+      {% if availability %}
+      <ul class="list-group list-group-flush">
+        {% for slot in availability %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ slot.get_weekday_display }}</span>
+          <span class="d-flex align-items-center gap-2"><span class="font-monospace">{{ slot.start_time|time:"H:i" }}–{{ slot.end_time|time:"H:i" }}</span>
+          {% if can_edit %}<form method="post" data-keep-scroll action="{% url 'trainers:availability_delete' trainer.pk slot.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" aria-label="Remove {{ slot }}" data-confirm="Remove this availability window? Existing bookings are not affected." data-confirm-label="Remove" data-confirm-class="btn-danger"><i class="bi bi-x-lg"></i></button></form>{% endif %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No availability set, so this trainer can't be booked yet.</div>{% endif %}
+      {% if can_edit %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'trainers:availability_add' trainer.pk %}" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col-12">{{ availability_form.weekday.label_tag }}{{ availability_form.weekday }}</div>
+          <div class="col-6">{{ availability_form.start_time.label_tag }}{{ availability_form.start_time }}</div>
+          <div class="col-6">{{ availability_form.end_time.label_tag }}{{ availability_form.end_time }}</div>
+          <div class="col-12"><button class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Add window</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Time off</h2></div>
+      {% if time_off %}
+      <ul class="list-group list-group-flush small">
+        {% for t in time_off %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ t }}{% if t.reason %} · {{ t.reason }}{% endif %}</span>
+          {% if can_edit %}<form method="post" data-keep-scroll action="{% url 'trainers:time_off_delete' trainer.pk t.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" aria-label="Remove time off"><i class="bi bi-x-lg"></i></button></form>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No upcoming time off.</div>{% endif %}
+      {% if can_edit %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'trainers:time_off_add' trainer.pk %}" class="row g-2">
+          {% csrf_token %}
+          <div class="col-6">{{ time_off_form.start_date.label_tag }}{{ time_off_form.start_date }}</div>
+          <div class="col-6">{{ time_off_form.end_date.label_tag }}{{ time_off_form.end_date }}</div>
+          <div class="col-12">{{ time_off_form.reason }}</div>
+          <div class="col-12"><button class="btn btn-sm btn-light border w-100">Add time off</button></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>Assigned members</h2><span class="badge bg-primary">{{ active_assignments|length }}</span></div>
+      {% if active_assignments %}
+      <ul class="list-group list-group-flush">
+        {% for a in active_assignments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div class="min-w-0"><a href="{{ a.member.get_absolute_url }}" class="fw-semibold">{{ a.member.full_name }}</a> <span class="small text-muted font-monospace">{{ a.member.member_id }}</span>
+            <div class="small text-muted">Since {{ a.start_date|date:"d M Y" }}{% if a.goal %} · {{ a.goal }}{% endif %}</div></div>
+          <div class="d-flex gap-1">
+            {% if can_view_progress %}<a href="{% url 'workouts:progress' a.member.pk %}" class="btn btn-sm btn-light border" title="Progress"><i class="bi bi-graph-up"></i><span class="visually-hidden">Progress</span></a>{% endif %}
+            {% if can_manage %}<form method="post" data-keep-scroll action="{% url 'trainers:end_assignment' a.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" data-confirm="End this coaching assignment? The history is kept." data-confirm-label="End assignment">End</button></form>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No members assigned.</div>{% endif %}
+      {% if assign_form %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'trainers:assign_member' trainer.pk %}" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col-md-5">{{ assign_form.member.label_tag }}{{ assign_form.member }}</div>
+          <div class="col-md-3">{{ assign_form.start_date.label_tag }}{{ assign_form.start_date }}</div>
+          <div class="col-md-4">{{ assign_form.goal.label_tag }}{{ assign_form.goal }}</div>
+          <div class="col-12"><button class="btn btn-sm btn-primary"><i class="bi bi-person-plus me-1"></i>Assign member</button></div>
+        </form>
+      </div>
+      {% endif %}
+      {% if past_assignments %}
+      <div class="card-body border-top small"><div class="stat-label mb-1">Past assignments</div>
+        {% for a in past_assignments %}<div>{{ a.member.full_name }} · {{ a.start_date|date:"d M Y" }} – {{ a.end_date|date:"d M Y" }}</div>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>Upcoming sessions</h2><a href="{% url 'appointments:list' %}?trainer={{ trainer.pk }}" class="small fw-semibold">All sessions</a></div>
+      {% if upcoming %}
+      <ul class="list-group list-group-flush">
+        {% for a in upcoming %}<li class="list-group-item d-flex justify-content-between"><a href="{{ a.get_absolute_url }}" class="text-body">{{ a.starts_at|date:"D d M, H:i" }} · {{ a.member.full_name }}</a><span class="small text-muted">{{ a.session_type.name }}</span></li>{% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No upcoming sessions.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Certificates</h2></div>
+      {% if certificates %}
+      <ul class="list-group list-group-flush">
+        {% for c in certificates %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div><span class="fw-semibold">{{ c.title }}</span>{% if c.issuer %} · {{ c.issuer }}{% endif %}
+            <div class="small text-muted">{% if c.issued_on %}Issued {{ c.issued_on|date:"M Y" }}{% endif %}{% if c.expires_on %} · {% if c.is_expired %}<span class="text-danger">expired {{ c.expires_on|date:"M Y" }}</span>{% else %}valid to {{ c.expires_on|date:"M Y" }}{% endif %}{% endif %}</div></div>
+          <div class="d-flex gap-1">
+            {% if c.file %}<a href="{% url 'trainers:certificate_file' trainer.pk c.pk %}" class="btn btn-sm btn-light border" target="_blank" rel="noopener">View</a>{% endif %}
+            {% if can_edit %}<form method="post" data-keep-scroll action="{% url 'trainers:certificate_delete' trainer.pk c.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" aria-label="Remove certificate" data-confirm="Remove this certificate?" data-confirm-label="Remove" data-confirm-class="btn-danger"><i class="bi bi-trash"></i></button></form>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No certificates uploaded.</div>{% endif %}
+      {% if can_edit %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'trainers:certificate_add' trainer.pk %}" enctype="multipart/form-data" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col-md-6">{{ certificate_form.title.label_tag }}{{ certificate_form.title }}</div>
+          <div class="col-md-6">{{ certificate_form.issuer.label_tag }}{{ certificate_form.issuer }}</div>
+          <div class="col-md-4">{{ certificate_form.issued_on.label_tag }}{{ certificate_form.issued_on }}</div>
+          <div class="col-md-4">{{ certificate_form.expires_on.label_tag }}{{ certificate_form.expires_on }}</div>
+          <div class="col-md-4">{{ certificate_form.file.label_tag }}{{ certificate_form.file }}</div>
+          <div class="col-12"><button class="btn btn-sm btn-light border"><i class="bi bi-upload me-1"></i>Upload certificate</button> <span class="small text-muted">PDF, JPEG, PNG or WebP.</span></div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if can_pay %}
+    <div class="card" id="pay">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2><i class="bi bi-lock me-1"></i>Pay records</h2><span class="small text-muted">This year: <strong>{{ pay_ytd|money }}</strong></span></div>
+      {% if pay_records %}
+      <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Month</th><th>Type</th><th class="text-end">Amount</th><th class="d-none d-md-table-cell">Notes</th><th class="d-none d-md-table-cell">Recorded by</th></tr></thead>
+        <tbody>{% for r in pay_records %}<tr><td>{{ r.period|date:"M Y" }}</td><td>{{ r.get_kind_display }}</td><td class="text-end text-nowrap{% if r.kind == 'deduction' %} text-danger{% endif %}">{% if r.kind == 'deduction' %}−{% endif %}{{ r.amount|money }}</td><td class="d-none d-md-table-cell small">{{ r.notes }}</td><td class="d-none d-md-table-cell small">{{ r.recorded_by }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<div class="card-body small text-muted">No pay records yet.</div>{% endif %}
+      <div class="card-body border-top">
+        <form method="post" data-keep-scroll action="{% url 'trainers:pay_add' trainer.pk %}" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col-md-3">{{ pay_form.period.label_tag }}{{ pay_form.period }}</div>
+          <div class="col-md-3">{{ pay_form.kind.label_tag }}{{ pay_form.kind }}</div>
+          <div class="col-md-3">{{ pay_form.amount.label_tag }}{{ pay_form.amount }}</div>
+          <div class="col-md-3">{{ pay_form.notes.label_tag }}{{ pay_form.notes }}</div>
+          <div class="col-12"><button class="btn btn-sm btn-primary">Add pay record</button> <span class="small text-muted">Visible only to roles with trainer-pay access.</span></div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

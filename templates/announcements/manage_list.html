@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block page_actions %}<a href="{% url 'announcements:board' %}" class="btn btn-light border">View notice board</a><a href="{% url 'announcements:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New announcement</a>{% endblock %}
+{% block content %}
+<div class="card table-card">
+  {% if announcements %}
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>Title</th><th>Audience</th><th>Publish</th><th>Expires</th><th>State</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for a in announcements %}<tr>
+      <td><a href="{{ a.get_absolute_url }}" class="fw-semibold text-body">{{ a.title }}</a><div><span class="badge bg-{{ a.kind_badge }}-subtle text-{{ a.kind_badge }}-emphasis">{{ a.get_kind_display }}</span>{% if a.notified_at %} <span class="small text-muted">notified {{ a.notified_at|date:"d M H:i" }}</span>{% endif %}</div></td>
+      <td class="small">{{ a.audience_label }}</td>
+      <td class="small text-nowrap">{{ a.publish_at|date:"d M Y H:i" }}</td>
+      <td class="small text-nowrap">{{ a.expires_at|date:"d M Y H:i"|default:"—" }}</td>
+      <td><span class="badge bg-{% if a.state == 'Live' %}success{% elif a.state == 'Scheduled' %}info{% else %}secondary{% endif %}-subtle text-{% if a.state == 'Live' %}success{% elif a.state == 'Scheduled' %}info{% else %}secondary{% endif %}-emphasis">{{ a.state }}</span></td>
+      <td class="text-end text-nowrap"><a href="{% url 'announcements:update' a.pk %}" class="btn btn-sm btn-light border">Edit</a>
+        <form method="post" action="{% url 'announcements:toggle' a.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-light border">{% if a.is_active %}Deactivate{% else %}Activate{% endif %}</button></form></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% url 'announcements:create' as u %}{% include "components/empty_state.html" with icon="megaphone" title="No announcements yet" message="Publish closures, timetable changes and news to members or staff." action_url=u action_label="New announcement" %}{% endif %}
+</div>
+{% endblock %}

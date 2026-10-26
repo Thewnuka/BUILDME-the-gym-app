@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block page_header %}{% endblock %}
+{% block content %}
+{% for a in announcements %}
+<div class="alert alert-{% if a.kind == 'closure' %}danger{% elif a.kind == 'operational' %}warning{% else %}info{% endif %} d-flex gap-3 align-items-start">
+  <i class="bi bi-megaphone fs-5"></i>
+  <div class="flex-grow-1"><strong>{{ a.title }}</strong> <span class="small">· {{ a.get_kind_display }}</span><div class="small">{{ a.body|truncatechars:220 }}</div></div>
+  <a href="{{ a.get_absolute_url }}" class="btn btn-sm btn-light border text-nowrap">Read</a>
+</div>
+{% endfor %}
+{% if setup_required %}
+<div class="alert alert-warning d-flex gap-3 align-items-start" role="alert">
+  <i class="bi bi-tools fs-4"></i>
+  <div>
+    <strong>Setup not finished: there is no administrator account yet.</strong>
+    Gym management features (members, plans, memberships, payments, attendance, users) are only shown to staff accounts.
+    To create the first administrator, run this in the project folder on the server, then sign in with the new account:
+    <code class="d-block mt-2 p-2 bg-white rounded border">python manage.py createsuperuser</code>
+  </div>
+</div>
+{% endif %}
+<div class="card welcome-banner mb-4">
+  <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <div class="text-muted-light small text-uppercase fw-semibold" style="letter-spacing:.1em">{{ today|date:"l, F j" }}</div>
+      <h1 class="h2 mb-1 mt-1">Welcome back, {{ user.first_name|default:user.username }}</h1>
+      <p class="text-muted-light mb-0">Here's what's happening at {{ GYM_NAME }} today.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      {% if perms.accounts.manage_users %}
+      <a href="{% url 'accounts:user_create' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Add user</a>
+      {% endif %}
+      {% if perms.accounts.view_activity_log %}
+      <a href="{% url 'accounts:activity_log' %}" class="btn btn-outline-light"><i class="bi bi-clock-history me-1"></i>Activity log</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if stats %}
+<div class="row g-3 g-xl-4 mb-4">
+  {% for stat in stats %}
+  <div class="col-6 col-xl-3">{% include "components/stat_card.html" %}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-3 g-xl-4">
+  {% if panels.member_growth %}
+  {% with panel=panels.member_growth %}
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-primary me-2"></i>{{ panel.slot.label }}</h2>
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          <div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="memberGrowthChart" aria-label="{{ panel.slot.label }}" role="img"></canvas></div>
+          {{ panel.value|json_script:"memberGrowthData" }}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.upcoming_expirations %}
+  {% with panel=panels.upcoming_expirations %}
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-warning me-2"></i>{{ panel.slot.label }}</h2>
+        {% if panel.status == "ready" %}<a href="{% url 'memberships:expiring' %}" class="small fw-semibold">View all{% if panel.value.total %} ({{ panel.value.total }}){% endif %}</a>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          {% if panel.value.items %}
+          <ul class="list-group list-group-flush">
+            {% for m in panel.value.items %}
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+              <a href="{{ m.get_absolute_url }}" class="text-body min-w-0"><span class="fw-semibold d-block text-truncate">{{ m.member.full_name }}</span><span class="small text-muted">{{ m.plan_name }}</span></a>
+              <span class="text-end text-nowrap small"><span class="d-block">{{ m.end_date|date:"d M" }}</span><span class="{% if m.days_remaining <= 3 %}text-danger fw-semibold{% else %}text-muted{% endif %}">{{ m.days_remaining }} day{{ m.days_remaining|pluralize }}</span></span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            {% include "components/empty_state.html" with icon="calendar-check" title="No upcoming expirations" message="No unrenewed memberships end in the next few days." %}
+          {% endif %}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.revenue_trend %}
+  {% with panel=panels.revenue_trend %}
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header"><h2><i class="bi bi-{{ panel.slot.icon }} text-success me-2"></i>{{ panel.slot.label }}</h2></div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          <div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="revenueChart" aria-label="{{ panel.slot.label }}" role="img"></canvas></div>
+          {{ panel.value|json_script:"revenueData" }}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.attendance_today %}
+  {% with panel=panels.attendance_today %}
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-teal me-2"></i>{{ panel.slot.label }}</h2>
+        <a href="{% url 'attendance:daily' %}" class="small fw-semibold">Daily report</a>
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          <div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="attendanceChart" role="img" aria-label="{{ panel.slot.label }}"></canvas></div>
+          {{ panel.value|json_script:"attendanceData" }}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.payment_breakdown %}
+  {% with panel=panels.payment_breakdown %}
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-primary me-2"></i>{{ panel.slot.label }}</h2>
+        <a href="{% url 'payments:outstanding' %}" class="small fw-semibold">Outstanding</a>
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          {% if panel.value.total %}
+          <p class="small text-muted">Current and scheduled memberships ({{ panel.value.total }}). Unpaid fees are <strong>not</strong> revenue.</p>
+          <ul class="list-group list-group-flush">
+            {% for row in panel.value.rows %}
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+              <span class="badge bg-{{ row.badge }}-subtle text-{{ row.badge }}-emphasis">{{ row.label }}</span><span class="fw-semibold">{{ row.count }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            {% include "components/empty_state.html" with icon="pie-chart" title="No current memberships" %}
+          {% endif %}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.recent_payments %}
+  {% with panel=panels.recent_payments %}
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-success me-2"></i>{{ panel.slot.label }}</h2>
+        <a href="{% url 'payments:list' %}" class="small fw-semibold">View all</a>
+      </div>
+      {% if panel.status == "ready" %}
+        {% if panel.value %}
+        <ul class="list-group list-group-flush">
+          {% for p in panel.value %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <a href="{{ p.get_absolute_url }}" class="text-body min-w-0"><span class="fw-semibold d-block text-truncate">{{ p.member.full_name }}</span><span class="small text-muted">{{ p.paid_on|date:"d M" }} · {{ p.get_method_display }} · <span class="font-monospace">{{ p.reference }}</span></span></a>
+            <span class="text-end text-nowrap"><span class="d-block fw-semibold{% if p.is_refund %} text-danger{% endif %}">{% if p.is_refund %}−{% endif %}{{ p.amount|money }}</span>{% include "payments/_txn_badges.html" %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}<div class="card-body">{% include "components/empty_state.html" with icon="receipt" title="No payments yet" %}</div>{% endif %}
+      {% else %}<div class="card-body">{% include "dashboard/_panel_state.html" %}</div>{% endif %}
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.revenue_vs_expenses %}
+  {% with panel=panels.revenue_vs_expenses %}
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-primary me-2"></i>{{ panel.slot.label }}</h2>
+        <a href="{% url 'reports:report' 'revenue-vs-expenses' %}" class="small fw-semibold">Full report</a>
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          <div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="revExpChart" role="img" aria-label="{{ panel.slot.label }}"></canvas></div>
+          {{ panel.value|json_script:"revExpData" }}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+
+  {% if panels.recent_activity %}
+  {% with panel=panels.recent_activity %}
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2><i class="bi bi-{{ panel.slot.icon }} text-info me-2"></i>{{ panel.slot.label }}</h2>
+        <a href="{% url 'accounts:activity_log' %}" class="small fw-semibold">View all</a>
+      </div>
+      <div class="card-body">
+        {% if panel.status == "ready" %}
+          {% include "components/activity_feed.html" with activities=panel.value show_actor=True %}
+        {% else %}{% include "dashboard/_panel_state.html" %}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endif %}
+</div>
+
+{% if not stats and not panels %}
+<div class="card">
+  {% include "components/empty_state.html" with icon="grid-1x2" title="Nothing to show yet" message="Your role doesn't include any dashboard widgets. Ask an administrator if you need access to more modules." %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if panels.member_growth.status == "ready" or panels.revenue_trend.status == "ready" or panels.attendance_today.status == "ready" or panels.revenue_vs_expenses.status == "ready" %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    GymCharts.bar("memberGrowthChart", "memberGrowthData", { label: "New members" });
+    GymCharts.bar("revenueChart", "revenueData", { label: "Net collected (LKR)" });
+    GymCharts.bar("attendanceChart", "attendanceData", { label: "Check-ins" });
+    GymCharts.multi("revExpChart", "revExpData");
+  });
+</script>
+{% endif %}
+{% endblock %}

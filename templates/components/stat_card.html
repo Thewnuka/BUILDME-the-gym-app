@@ -1,0 +1,23 @@
+{% load ui_tags humanize %}
+{% comment %}
+Usage: {% include "components/stat_card.html" with stat=stat %}
+`stat` is a registry result: {slot, status (ready|pending|error), value}.
+{% endcomment %}
+<div class="card stat-card tone-{{ stat.slot.color }}{% if stat.status != 'ready' %} is-pending{% endif %}">
+  <div class="card-body">
+    <span class="stat-icon"><i class="bi bi-{{ stat.slot.icon }}"></i></span>
+    <div class="min-w-0">
+      <div class="stat-label">{{ stat.slot.label }}</div>
+      {% if stat.status == "ready" %}
+        <div class="stat-value{% if stat.slot.fmt == "currency" %} stat-money{% endif %}">{% if stat.slot.fmt == "currency" %}{{ stat.value|money }}{% else %}{{ stat.value|intcomma }}{% endif %}</div>
+        {% if stat.note %}<div class="stat-note">{{ stat.note }}</div>{% endif %}
+      {% elif stat.status == "error" %}
+        <div class="stat-value text-danger"><i class="bi bi-exclamation-circle"></i></div>
+        <div class="stat-note text-danger">Couldn't load this figure.</div>
+      {% else %}
+        <div class="stat-value">—</div>
+        <div class="stat-note"><i class="bi bi-hourglass-split me-1"></i>Available with the {{ stat.slot.module }} module</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

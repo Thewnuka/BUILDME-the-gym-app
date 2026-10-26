@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block page_actions %}{% if can_coach %}<a href="{% url 'nutrition:plan_create' %}?member={{ member.pk }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New meal plan</a>{% endif %}{% endblock %}
+{% block content %}
+{% include "nutrition/_disclaimer.html" %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-header"><h2>Meal plans</h2></div>
+      {% if plans %}<ul class="list-group list-group-flush">{% for p in plans %}<li class="list-group-item d-flex justify-content-between"><a href="{{ p.get_absolute_url }}" class="text-body"><span class="fw-semibold">{{ p.name }}</span><div class="small text-muted">{{ p.start_date|date:"d M Y" }}{% if p.end_date %} – {{ p.end_date|date:"d M Y" }}{% endif %}</div></a>{% if p.is_current %}<span class="badge bg-success-subtle text-success-emphasis align-self-center">Current</span>{% endif %}</li>{% endfor %}</ul>
+      {% else %}{% include "components/empty_state.html" with icon="egg-fried" title="No meal plans" message="A trainer can create or assign one." %}{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header"><h2>Preferences, allergies &amp; goals</h2></div><div class="card-body">
+      {% if form %}
+        {% include "components/form_errors.html" %}
+        <form method="post" novalidate>{% csrf_token %}<div class="row g-3">{% form_field form.preferences %}{% form_field form.allergies %}{% form_field form.goals %}<div class="col-12"><button class="btn btn-primary">Save</button></div></div></form>
+        {% if profile %}<p class="small text-muted mt-2 mb-0">Last updated {{ profile.updated_at|date:"d M Y" }}{% if profile.updated_by %} by {{ profile.updated_by }}{% endif %}.</p>{% endif %}
+      {% elif profile %}
+        <dl class="detail-list mb-0"><dt>Preferences</dt><dd>{{ profile.preferences|default:"—"|linebreaksbr }}</dd><dt>Allergies</dt><dd>{{ profile.allergies|default:"—"|linebreaksbr }}</dd><dt>Goals</dt><dd class="mb-0">{{ profile.goals|default:"—"|linebreaksbr }}</dd></dl>
+      {% else %}<p class="small text-muted mb-0">Nothing recorded.</p>{% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

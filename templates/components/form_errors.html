@@ -1,0 +1,11 @@
+{% if form.non_field_errors %}
+<div class="alert alert-danger d-flex gap-2 align-items-start" role="alert">
+  <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+  <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+</div>
+{% elif form.errors %}
+<div class="alert alert-danger d-flex gap-2 align-items-center py-2" role="alert">
+  <i class="bi bi-exclamation-octagon-fill"></i>
+  <div>Please correct the highlighted fields below.</div>
+</div>
+{% endif %}

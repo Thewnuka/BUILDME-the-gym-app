@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Plans available to members. Prices are in LKR.</p>{% endblock %}
+{% block page_actions %}
+{% if can_create %}<a href="{% url 'memberships:plan_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New plan</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-6">{% include "components/search_input.html" with value=filters.q placeholder="Search plans" %}</div>
+      <div class="col-8 col-md-4">
+        <select name="status" class="form-select" data-auto-submit aria-label="Filter by status">
+          <option value="">All plans</option>
+          <option value="active"{% if filters.status == "active" %} selected{% endif %}>Active</option>
+          <option value="inactive"{% if filters.status == "inactive" %} selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+      <div class="col-4 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Search</button>
+        {% if is_filtered %}<a href="{% url 'memberships:plan_list' %}" class="btn btn-light border" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% if plans %}
+<div class="row g-3 g-xl-4">
+  {% for plan in plans %}
+  <div class="col-md-6 col-xl-4" data-reveal>
+    <div class="card plan-card h-100{% if not plan.is_active %} is-inactive{% endif %}">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <h2 class="h5 mb-0"><a href="{{ plan.get_absolute_url }}" class="text-body text-decoration-none">{{ plan.name }}</a></h2>
+          {% if plan.is_active %}<span class="badge bg-success-subtle text-success-emphasis">Active</span>{% else %}<span class="badge bg-secondary-subtle text-secondary-emphasis">Inactive</span>{% endif %}
+        </div>
+        <div class="plan-price">{{ plan.price|money }}</div>
+        <div class="text-muted small mb-3">per {{ plan.duration_display }}</div>
+        {% if plan.benefit_list %}
+        <ul class="benefit-list small mb-3">{% for b in plan.benefit_list|slice:":4" %}<li>{{ b }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="mt-auto d-flex justify-content-between align-items-center small text-muted">
+          <span><i class="bi bi-people me-1"></i>{{ plan.current_count }} current member{{ plan.current_count|pluralize }}</span>
+          <a href="{{ plan.get_absolute_url }}" class="btn btn-sm btn-light border">Details</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% if is_paginated %}<div class="card mt-3">{% include "components/pagination.html" %}</div>{% endif %}
+{% elif is_filtered %}
+<div class="card">
+  {% url 'memberships:plan_list' as reset_url %}
+  {% include "components/empty_state.html" with icon="search" title="No matching plans" action_url=reset_url action_label="Clear filters" action_icon="x-lg" %}
+</div>
+{% else %}
+<div class="card">
+  {% if can_create %}
+    {% url 'memberships:plan_create' as create_url %}
+    {% include "components/empty_state.html" with icon="tags" title="No plans yet" message="Create plans such as Monthly, 3 months, 6 months or Annual." action_url=create_url action_label="New plan" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="tags" title="No plans yet" message="An administrator needs to create membership plans." %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

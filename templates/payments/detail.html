@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ payment.member.full_name }} · {{ payment.item_label }}</p>{% endblock %}
+{% block page_actions %}
+{% if payment.receipt_number %}
+  <a href="{% url 'payments:receipt' payment.pk %}" class="btn btn-light border"><i class="bi bi-printer me-1"></i>Receipt</a>
+  <a href="{% url 'payments:receipt_pdf' payment.pk %}" class="btn btn-light border"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+{% endif %}
+{% if can_confirm %}
+<form method="post" action="{% url 'payments:confirm' payment.pk %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-success" data-confirm="Only confirm once the transfer has arrived in the gym's bank account. A receipt will be issued." data-confirm-title="Confirm bank transfer?" data-confirm-label="Confirm payment" data-confirm-class="btn-success"><i class="bi bi-check2-circle me-1"></i>Confirm transfer</button>
+</form>
+{% endif %}
+{% if can_refund %}<a href="{% url 'payments:refund' payment.pk %}" class="btn btn-outline-warning"><i class="bi bi-arrow-counterclockwise me-1"></i>Refund</a>{% endif %}
+{% if can_void %}<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#voidModal"><i class="bi bi-slash-circle me-1"></i>Void</button>{% endif %}
+{% endblock %}
+{% block content %}
+{% if payment.status == "voided" %}
+<div class="alert alert-secondary d-flex gap-2"><i class="bi bi-slash-circle mt-1"></i><div><strong>Voided</strong> on {{ payment.voided_at|date:"d M Y H:i" }} by {{ payment.voided_by }}: {{ payment.void_reason }}. This entry no longer counts towards any balance.</div></div>
+{% elif payment.status == "pending" %}
+<div class="alert alert-warning d-flex gap-2"><i class="bi bi-hourglass-split mt-1"></i><div><strong>Pending:</strong> this bank transfer isn't counted as collected until it is confirmed. No receipt has been issued yet.</div></div>
+{% endif %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>{{ payment.get_kind_display }} details</h2>{% include "payments/_txn_badges.html" with p=payment %}</div>
+      <div class="card-body">
+        <div class="stat-value mb-3{% if payment.is_refund %} text-danger{% endif %}">{% if payment.is_refund %}−{% endif %}{{ payment.amount|money }}</div>
+        <div class="row">
+          <div class="col-sm-6">
+            <dl class="detail-list">
+              <dt>Transaction reference</dt><dd class="font-monospace">{{ payment.reference }}</dd>
+              <dt>Receipt number</dt><dd class="font-monospace">{{ payment.receipt_number|default:"Not issued" }}</dd>
+              <dt>{% if payment.is_refund %}Refund{% else %}Payment{% endif %} date</dt><dd>{{ payment.paid_on|date:"d M Y" }}</dd>
+              <dt>Method</dt><dd>{{ payment.get_method_display }}</dd>
+              {% if payment.external_reference %}<dt>Bank / card reference</dt><dd>{{ payment.external_reference }}</dd>{% endif %}
+            </dl>
+          </div>
+          <div class="col-sm-6">
+            <dl class="detail-list">
+              <dt>Member</dt><dd><a href="{{ payment.member.get_absolute_url }}">{{ payment.member.full_name }}</a> <span class="font-monospace small text-muted">{{ payment.member.member_id }}</span></dd>
+              <dt>For</dt><dd>{% if payment.membership_id or perms.accounts.manage_appointments or perms.accounts.view_training %}<a href="{{ payment.target.get_absolute_url }}">{{ payment.item_label }}</a>{% else %}{{ payment.item_label }}{% endif %}<div class="small text-muted">{{ payment.item_detail }}</div></dd>
+              <dt>Recorded</dt><dd>{{ payment.recorded_at|date:"d M Y H:i" }} by {{ payment.recorded_by }}</dd>
+              {% if payment.confirmed_at %}<dt>Confirmed</dt><dd>{{ payment.confirmed_at|date:"d M Y H:i" }} by {{ payment.confirmed_by }}</dd>{% endif %}
+              {% if payment.refund_of %}<dt>Refund of</dt><dd><a href="{{ payment.refund_of.get_absolute_url }}" class="font-monospace">{{ payment.refund_of.reference }}</a></dd>{% endif %}
+            </dl>
+          </div>
+        </div>
+        {% if payment.notes %}<div class="stat-label">{% if payment.is_refund %}Reason{% else %}Notes{% endif %}</div><p class="mb-0">{{ payment.notes }}</p>{% endif %}
+      </div>
+    </div>
+    {% if refunds %}
+    <div class="card mt-4">
+      <div class="card-header"><h2>Refunds of this payment</h2></div>
+      <ul class="list-group list-group-flush">
+        {% for r in refunds %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><a href="{{ r.get_absolute_url }}" class="font-monospace">{{ r.reference }}</a> · {{ r.paid_on|date:"d M Y" }} · {{ r.notes }}</span>
+          <span class="text-danger text-nowrap">−{{ r.amount|money }} {% include "payments/_txn_badges.html" with p=r %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if payment.kind == "payment" %}<div class="card-body small text-muted">Still refundable: {{ refundable|money }}</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>Balance now</h2>{% include "payments/_balance_badge.html" with b=balance %}</div>
+      <div class="card-body">
+        <dl class="detail-list mb-0">
+          <dt>Amount due</dt><dd>{{ balance.charge|money }}</dd>
+          <dt>Paid (net of refunds)</dt><dd>{{ balance.net_paid|money }}</dd>
+          <dt>Pending</dt><dd>{{ balance.pending|money }}</dd>
+          <dt>Outstanding</dt><dd class="mb-0 fw-bold">{{ balance.outstanding|money }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% if can_void %}
+  {% url 'payments:void' payment.pk as void_url %}
+  {% include "components/reason_modal.html" with id="voidModal" action=void_url title="Void this transaction?" message="Use this only for entries recorded by mistake. The record is kept, marked void, and no longer counts towards the balance. To return money to a member, use Refund instead." button_label="Void transaction" button_class="btn-danger" placeholder="e.g. Entered against the wrong member" %}
+{% endif %}
+{% endblock %}

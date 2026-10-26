@@ -1,0 +1,21 @@
+{% load ui_tags %}
+{% comment %}Plans with their resulting end dates. Expects `options` and `start`.{% endcomment %}
+<div class="card">
+  <div class="card-header"><h2>Plan comparison</h2></div>
+  {% if options %}
+  <ul class="list-group list-group-flush">
+    {% for o in options %}
+    <li class="list-group-item">
+      <div class="d-flex justify-content-between gap-2">
+        <span class="fw-semibold">{{ o.plan.name }}</span>
+        <span class="text-nowrap">{{ o.plan.price|money }}</span>
+      </div>
+      <div class="small text-muted">{{ o.plan.duration_display }} · {{ start|date:"d M Y" }} → {{ o.end|date:"d M Y" }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    {% url 'memberships:plan_list' as plans_url %}
+    {% include "components/empty_state.html" with icon="tags" title="No active plans" message="Create or activate a membership plan first." action_url=plans_url action_label="Membership plans" action_icon="tags" %}
+  {% endif %}
+</div>

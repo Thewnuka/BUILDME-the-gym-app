@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card">
+        <div class="card-header"><h2>Plan details</h2></div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% form_field form.name "col-md-8" %}
+            {% form_field form.price "col-md-4" %}
+            {% form_field form.duration_preset "col-md-4" %}
+            <div class="col-md-8" id="customDuration">
+              <div class="row g-3">
+                {% form_field form.duration_value "col-6" %}
+                {% form_field form.duration_unit "col-6" %}
+              </div>
+            </div>
+            {% form_field form.description %}
+            {% form_field form.benefits "col-md-6" %}
+            {% form_field form.access_restrictions "col-md-6" %}
+            <div class="col-12"><div class="stat-label">Access rules checked at check-in</div></div>
+            {% form_field form.allowed_days %}
+            {% form_field form.access_start_time "col-md-6" %}
+            {% form_field form.access_end_time "col-md-6" %}
+            {% form_field form.is_active %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card mb-4">
+        <div class="card-body small">
+          <h2 class="h5"><i class="bi bi-shield-check text-primary me-1"></i>How plan changes work</h2>
+          <ul class="text-muted ps-3 mb-0">
+            <li>Existing memberships keep the name, duration and price agreed when they were assigned.</li>
+            <li>Changes apply to new assignments and renewals only.</li>
+            <li>Month-based plans follow calendar months: 1 month from 10 Jan ends 9 Feb.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>{% if object %}Save changes{% else %}Create plan{% endif %}</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'memberships:plan_list' %}{% endif %}" class="btn btn-light border">Cancel</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var preset = document.getElementById("id_duration_preset");
+    var custom = document.getElementById("customDuration");
+    function sync() { custom.classList.toggle("d-none", preset.value !== "custom"); }
+    preset.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

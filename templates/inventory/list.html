@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{% if low_count %}<span class="text-danger fw-semibold">{{ low_count }} item{{ low_count|pluralize }} at or below minimum stock.</span>{% else %}All stock levels are above their minimum.{% endif %}</p>{% endblock %}
+{% block page_actions %}{% if perms.accounts.manage_inventory %}<a href="{% url 'inventory:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New item</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-5">{% include "components/search_input.html" with value=filters.q placeholder="Name or SKU" %}</div>
+      <div class="col-6 col-md-3"><select name="category" class="form-select" data-auto-submit aria-label="Category"><option value="">All categories</option>{% for v, l in categories %}<option value="{{ v }}"{% if filters.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="low" name="low" value="1"{% if filters.low %} checked{% endif %} data-auto-submit><label class="form-check-label small" for="low">Low stock only</label></div></div>
+      <div class="col-md-2"><button class="btn btn-dark w-100" data-no-loading>Search</button></div>
+    </form>
+  </div>
+  {% if items %}
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>SKU</th><th>Item</th><th class="text-end">On hand</th><th class="text-end">Minimum</th><th class="d-none d-md-table-cell">Supplier</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for i in items %}<tr>
+      <td class="font-monospace small">{{ i.sku }}</td>
+      <td><a href="{{ i.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ i.name }}</a><div class="small text-muted">{{ i.get_category_display }}</div></td>
+      <td class="text-end text-nowrap{% if i.is_low %} text-danger fw-semibold{% endif %}">{{ i.quantity.normalize }} {{ i.unit }}{% if i.is_low %} <i class="bi bi-exclamation-triangle-fill" title="Low stock"></i>{% endif %}</td>
+      <td class="text-end small">{{ i.minimum_stock.normalize }}</td>
+      <td class="d-none d-md-table-cell small">{{ i.supplier.name|default:"—" }}</td>
+      <td class="text-end"><a href="{{ i.get_absolute_url }}" class="btn btn-sm btn-light border">Open</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="box-seam" title="No items found" message="Optional: track supplements, drinks, towels and cleaning supplies here." %}{% endif %}
+</div>
+{% endblock %}

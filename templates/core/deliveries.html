@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Every email, SMS and WhatsApp attempt, with what actually happened.</p>{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body small">
+  <div class="row g-3">
+    <div class="col-md-4"><div class="stat-label">Channels switched on</div>{% if configured %}{{ configured|join:", " }}{% else %}<span class="text-muted">None (in-app notifications only)</span>{% endif %}</div>
+    <div class="col-md-4"><div class="stat-label">SMS / WhatsApp provider</div>{{ sms_provider|default:"not set" }} / {{ whatsapp_provider|default:"not set" }}</div>
+    <div class="col-md-4"><div class="stat-label">Email backend</div>{{ email_backend }}</div>
+  </div>
+  <p class="text-muted mt-3 mb-0"><strong>Not sent</strong>: not attempted (no provider, address or credentials). <strong>Queued</strong>: accepted by the provider, delivery not yet confirmed. <strong>Sent</strong>: handed to the mail server or an SMS provider without delivery receipts. <strong>Delivered</strong>: the provider confirmed delivery. <strong>Failed</strong>: rejected.</p>
+</div></div>
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2"><div class="col-6 col-md-3"><select name="channel" class="form-select" data-auto-submit aria-label="Channel"><option value="">All channels</option>{% for v, l in channels_ %}<option value="{{ v }}"{% if channel == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><select name="status" class="form-select" data-auto-submit aria-label="Status"><option value="">All statuses</option>{% for v, l in statuses %}<option value="{{ v }}"{% if status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div></form>
+  </div>
+  {% if deliveries %}
+  <div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>When</th><th>Channel</th><th>To</th><th>Message</th><th>Status</th><th class="d-none d-lg-table-cell">Detail</th></tr></thead>
+    <tbody>{% for d in deliveries %}<tr><td class="small text-nowrap">{{ d.created_at|date:"d M H:i" }}</td><td class="small">{{ d.get_channel_display }}</td><td class="small">{{ d.recipient|default:"—" }}</td><td class="small">{{ d.notification.title }}</td><td><span class="badge bg-{{ d.status_badge }}-subtle text-{{ d.status_badge }}-emphasis">{{ d.get_status_display }}</span></td><td class="d-none d-lg-table-cell small text-muted">{{ d.detail }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="send" title="No external messages yet" message="When NOTIFY_CHANNELS is set, each email, SMS or WhatsApp attempt is logged here." %}{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% comment %}Pending / error states for a dashboard panel. Expects `panel`.{% endcomment %}
+{% if panel.status == "error" %}
+<div class="empty-state">
+  <div class="empty-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+  <h3>Couldn't load this section</h3>
+  <p>Please refresh the page. If the problem persists, contact your administrator.</p>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="bi bi-{{ panel.slot.icon }}"></i></div>
+  <h3>Coming with the {{ panel.slot.module }} module</h3>
+  <p>This section fills in automatically from live data once the {{ panel.slot.module }} module is enabled.</p>
+</div>
+{% endif %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block page_actions %}
+<button type="button" class="btn btn-light border" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print pass</button>
+<button type="button" class="btn btn-light border" id="downloadQr" data-filename="BUILDME_Member_QR_{{ member.member_id }}.png"><i class="bi bi-download me-1"></i>Download QR Code</button>
+{% if can_reissue %}
+<form method="post" action="{% url 'attendance:reissue_pass' member.pk %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-outline-danger" data-confirm="The current QR code will stop working immediately, for example if a card was lost or shared." data-confirm-title="Reissue check-in pass?" data-confirm-label="Reissue" data-confirm-class="btn-danger"><i class="bi bi-arrow-repeat me-1"></i>Reissue</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-5">
+    <div class="card text-center pass-card">
+      <div class="card-body p-4">
+        <div class="brand-name text-primary fs-4">{{ GYM_NAME }}</div>
+        <div class="stat-label mb-3">Member check-in pass</div>
+        <div class="d-inline-block p-2 bg-white rounded-3 border" id="qrImage">{{ svg }}</div>
+        <div class="h5 mt-3 mb-0">{{ member.full_name }}</div>
+        <div class="font-monospace text-muted">{{ member.member_id }}</div>
+        <p class="small text-muted mt-3 mb-0">Show this code at the front desk. It contains no personal details and can be reissued at any time. Issued {{ card.issued_at|date:"d M Y" }}.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  // Saves the QR shown above as a PNG: the same SVG, drawn onto a canvas at a
+  // whole-number scale so every module stays sharp and scannable.
+  function renderQrPng(callback) {
+    var svg = document.querySelector("#qrImage svg");
+    var source = new XMLSerializer().serializeToString(svg);
+    if (source.indexOf("xmlns=") === -1) {
+      source = source.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    var width = svg.width.baseVal.value, height = svg.height.baseVal.value;
+    var factor = Math.max(1, Math.ceil(1024 / width));
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.createElement("canvas");
+      canvas.width = width * factor;
+      canvas.height = height * factor;
+      var ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(callback, "image/png");
+    };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+  }
+  document.getElementById("downloadQr").addEventListener("click", function () {
+    var button = this;
+    renderQrPng(function (blob) {
+      var link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = button.dataset.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+    });
+  });
+</script>
+{% endblock %}

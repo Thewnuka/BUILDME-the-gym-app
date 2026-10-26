@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    {% if latest %}
+    <div class="card mb-4">
+      <div class="card-body d-flex flex-wrap justify-content-between gap-2 align-items-center">
+        <div>
+          <div class="stat-label">Latest membership</div>
+          <div class="fw-semibold">{{ latest.plan_name }} · {{ latest.price|money }}</div>
+          <div class="small text-muted">{{ latest.start_date|date:"d M Y" }} – {{ latest.end_date|date:"d M Y" }}</div>
+        </div>
+        {% include "components/membership_badge.html" with m=latest %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if blocked %}
+      <div class="alert alert-warning">A renewal is already scheduled to start on {{ latest.start_date|date:"d M Y" }}. Cancel it first if you need to change it.</div>
+    {% elif not member.is_active %}
+      <div class="alert alert-warning">This member is inactive. Reactivate them before renewing.</div>
+    {% else %}
+    <div class="card">
+      <div class="card-body">
+        <div class="alert alert-info small d-flex gap-2">
+          <i class="bi bi-calendar-event mt-1"></i>
+          <div>
+            {% if early %}<strong>Early renewal:</strong> the new period starts the day after the current one ends, on <strong>{{ renewal_start|date:"d M Y" }}</strong>. No days are lost.
+            {% else %}<strong>Renewal after expiry:</strong> the new period starts today, <strong>{{ renewal_start|date:"d M Y" }}</strong>.{% endif %}
+            Choosing a different plan schedules an upgrade or downgrade from that date. The current period keeps its plan and price.
+          </div>
+        </div>
+        {% include "components/form_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            {% form_field form.plan %}
+            {% form_field form.notes %}
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" data-loading-text="Renewing…"><i class="bi bi-arrow-repeat me-1"></i>Confirm renewal</button>
+              <a href="{{ member.get_absolute_url }}" class="btn btn-light border">Cancel</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <p class="small text-muted mt-3"><i class="bi bi-credit-card me-1"></i>Renewing doesn't record a payment. Record the payment afterwards from the membership page.</p>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">{% include "memberships/_plan_options.html" with start=renewal_start %}</div>
+</div>
+{% endblock %}

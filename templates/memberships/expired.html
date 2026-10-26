@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Members whose last membership has ended and was not renewed.</p>{% endblock %}
+{% block content %}
+{% include "memberships/_tabs.html" %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-6">{% include "components/search_input.html" with value=filters.q placeholder="Member name or member ID" %}</div>
+      <div class="col-md-4">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="include_inactive" name="include_inactive" value="1"{% if include_inactive %} checked{% endif %} data-auto-submit>
+          <label class="form-check-label" for="include_inactive">Include inactive members</label>
+        </div>
+      </div>
+      <div class="col-md-2"><button type="submit" class="btn btn-dark w-100" data-no-loading>Search</button></div>
+    </form>
+  </div>
+  {% if memberships %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Member</th><th>Last plan</th><th>Expired on</th><th class="d-none d-md-table-cell">Phone</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for m in memberships %}
+        <tr>
+          <td><a href="{{ m.member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ m.member.full_name }}</a><div class="small text-muted font-monospace">{{ m.member.member_id }}{% if not m.member.is_active %} · <span class="text-secondary">inactive</span>{% endif %}</div></td>
+          <td>{{ m.plan_name }}</td>
+          <td class="text-nowrap">{{ m.end_date|date:"d M Y" }}<div class="small text-muted">{{ m.end_date|timesince }} ago</div></td>
+          <td class="d-none d-md-table-cell">{{ m.member.phone|default:"—" }}</td>
+          <td class="text-end">{% if perms.accounts.manage_memberships and m.member.is_active %}<a href="{% url 'memberships:renew' m.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-arrow-repeat me-1"></i>Renew</a>{% else %}<a href="{{ m.get_absolute_url }}" class="btn btn-sm btn-light border">View</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="emoji-smile" title="No expired memberships" message="Every member with a past membership has renewed." %}
+  {% endif %}
+</div>
+{% endblock %}

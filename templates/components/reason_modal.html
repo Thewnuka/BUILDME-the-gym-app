@@ -1,0 +1,25 @@
+{% comment %}
+A confirmation dialog that collects a required reason before POSTing.
+Usage: {% include "components/reason_modal.html" with id="cancelModal" action=url title="Cancel membership?" message="..." button_label="Cancel membership" button_class="btn-danger" placeholder="..." %}
+Open it with: <button data-bs-toggle="modal" data-bs-target="#cancelModal">
+{% endcomment %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="{{ action }}" class="modal-content border-0" style="border-radius:16px">
+      {% csrf_token %}
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="{{ id }}Title">{{ title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% if message %}<p class="text-muted">{{ message }}</p>{% endif %}
+        <label class="form-label" for="{{ id }}Reason">Reason <span class="required-mark" aria-hidden="true">*</span></label>
+        <input type="text" class="form-control" id="{{ id }}Reason" name="reason" required minlength="3" maxlength="200" placeholder="{{ placeholder|default:'' }}">
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Back</button>
+        <button type="submit" class="btn {{ button_class|default:'btn-primary' }}" data-loading-text="Saving…">{{ button_label }}</button>
+      </div>
+    </form>
+  </div>
+</div>

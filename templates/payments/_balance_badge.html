@@ -1,0 +1,2 @@
+{% comment %}Usage: {% include "payments/_balance_badge.html" with b=balance %}{% endcomment %}
+<span class="badge bg-{{ b.status_badge }}-subtle text-{{ b.status_badge }}-emphasis"><span class="status-dot bg-{{ b.status_badge }}"></span>{{ b.status_label }}</span>

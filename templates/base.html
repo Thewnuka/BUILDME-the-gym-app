@@ -1,0 +1,38 @@
+{% extends "layouts/skeleton.html" %}
+{% block body %}
+<a class="visually-hidden-focusable position-absolute m-2 btn btn-primary" style="z-index:2000" href="#main-content">Skip to content</a>
+{% include "partials/sidebar.html" %}
+<div class="sidebar-backdrop"></div>
+<div class="app-main">
+  {% include "partials/topbar.html" %}
+  <main id="main-content" class="app-content">
+    {% block page_header %}
+    <div class="page-header">
+      <div class="min-w-0">
+        {% if breadcrumbs %}
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">Home</a></li>
+            {% for label, url in breadcrumbs %}
+            <li class="breadcrumb-item"><a href="{{ url }}">{{ label }}</a></li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">{{ page_title }}</li>
+          </ol>
+        </nav>
+        {% endif %}
+        <h1 class="text-truncate">{% block heading %}{{ page_title }}{% endblock %}</h1>
+        {% block subtitle %}{% endblock %}
+      </div>
+      <div class="d-flex flex-wrap gap-2">{% block page_actions %}{% endblock %}</div>
+    </div>
+    {% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="app-footer d-flex flex-wrap justify-content-between gap-2">
+    <span>&copy; {% now "Y" %} {{ GYM_NAME }}</span>
+    <span>{{ GYM_NAME }} · Gym Management System</span>
+  </footer>
+</div>
+{% include "partials/messages.html" %}
+{% include "components/confirm_modal.html" %}
+{% endblock %}

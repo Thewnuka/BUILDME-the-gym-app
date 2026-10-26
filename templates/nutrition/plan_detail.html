@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{% if plan.member %}{{ plan.member.full_name }} · {{ plan.start_date|date:"d M Y" }}{% if plan.end_date %} – {{ plan.end_date|date:"d M Y" }}{% endif %}{% else %}Template{% endif %}{% if plan.goal %} · {{ plan.goal }}{% endif %}</p>{% endblock %}
+{% block content %}
+{% include "nutrition/_disclaimer.html" %}
+{% if plan.description %}<p>{{ plan.description|linebreaksbr }}</p>{% endif %}
+<div class="row g-4">
+  <div class="col-xl-8 d-flex flex-column gap-4">
+    {% for day, meals in days %}
+    <div class="card"><div class="card-header"><h2>Day {{ day }}</h2></div>
+      <ul class="list-group list-group-flush">
+        {% for meal in meals %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between gap-2"><div><span class="badge bg-primary-subtle text-primary-emphasis">{{ meal.get_meal_type_display }}</span> <span class="fw-semibold">{{ meal.title }}</span></div>
+            {% if editable %}<form method="post" data-keep-scroll action="{% url 'nutrition:meal_delete' plan.pk meal.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" aria-label="Remove {{ meal.title }}"><i class="bi bi-x-lg"></i></button></form>{% endif %}</div>
+          {% if meal.description %}<div class="small mt-1">{{ meal.description|linebreaksbr }}</div>{% endif %}
+          {% if meal.ingredient_list %}<div class="small text-muted mt-1">Ingredients: {{ meal.ingredient_list|join:", " }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% empty %}
+    <div class="card">{% include "components/empty_state.html" with icon="egg-fried" title="No meals yet" %}</div>
+    {% endfor %}
+  </div>
+  <div class="col-xl-4 d-flex flex-column gap-4">
+    {% if editable %}
+    <div class="card"><div class="card-header"><h2>Add a meal</h2></div><div class="card-body">
+      <form method="post" data-keep-scroll action="{% url 'nutrition:meal_add' plan.pk %}" class="row g-2">{% csrf_token %}
+        <div class="col-4"><label class="form-label small">Day</label>{{ meal_form.day_number }}</div>
+        <div class="col-8"><label class="form-label small">Meal</label>{{ meal_form.meal_type }}</div>
+        <div class="col-12"><label class="form-label small">Title</label>{{ meal_form.title }}</div>
+        <div class="col-12"><label class="form-label small">Description</label>{{ meal_form.description }}</div>
+        <div class="col-12"><label class="form-label small">Ingredients (one per line)</label>{{ meal_form.ingredients }}</div>
+        <div class="col-12"><button class="btn btn-primary w-100">Add meal</button></div>
+      </form>
+    </div></div>
+    {% endif %}
+    {% if assign_form %}
+    <div class="card"><div class="card-header"><h2>Assign to a member</h2></div><div class="card-body">
+      <form method="post" data-keep-scroll action="{% url 'nutrition:plan_assign' plan.pk %}" class="row g-2">{% csrf_token %}
+        <div class="col-12">{{ assign_form.member }}</div>
+        <div class="col-6"><label class="form-label small">Start</label>{{ assign_form.start_date }}</div>
+        <div class="col-6"><label class="form-label small">End</label>{{ assign_form.end_date }}</div>
+        <div class="col-12"><button class="btn btn-primary w-100">Assign a copy</button></div>
+      </form>
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

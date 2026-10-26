@@ -1,0 +1,14 @@
+<form method="get" class="row g-2 align-items-end" role="search">
+  {% if report.uses_dates %}
+  <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="date_from">From</label><input type="date" name="date_from" id="date_from" class="form-control" value="{{ params.date_from|date:'Y-m-d' }}"></div>
+  <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="date_to">To</label><input type="date" name="date_to" id="date_to" class="form-control" value="{{ params.date_to|date:'Y-m-d' }}"></div>
+  {% endif %}
+  {% if report.groupable %}
+  <div class="col-6 col-md-2"><label class="form-label small" for="group">Group by</label><select name="group" id="group" class="form-select" data-auto-submit><option value="day"{% if params.group == "day" %} selected{% endif %}>Day</option><option value="month"{% if params.group == "month" %} selected{% endif %}>Month</option></select></div>
+  {% endif %}
+  {% for name, label, choices, current in filters %}
+  <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f_{{ name }}">{{ label }}</label><select name="{{ name }}" id="f_{{ name }}" class="form-select" data-auto-submit>{% for v, l in choices %}<option value="{{ v }}"{% if current == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  {% endfor %}
+  {% if report.searchable %}<div class="col-md-4 col-lg-3"><label class="form-label small" for="q">Search</label>{% include "components/search_input.html" with value=params.q placeholder="Search" %}</div>{% endif %}
+  <div class="col-6 col-md-2 col-lg-1"><button class="btn btn-dark w-100" data-no-loading>Apply</button></div>
+</form>

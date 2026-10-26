@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Every membership period, current and historical.</p>{% endblock %}
+{% block content %}
+{% include "memberships/_tabs.html" %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-5">{% include "components/search_input.html" with value=filters.q placeholder="Member name, member ID or plan" %}</div>
+      <div class="col-6 col-md-3">
+        <select name="status" class="form-select" data-auto-submit aria-label="Filter by status">
+          <option value="">All statuses</option>
+          {% for value, label in statuses %}<option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="plan" class="form-select" data-auto-submit aria-label="Filter by plan">
+          <option value="">All plans</option>
+          {% for p in plans %}<option value="{{ p.pk }}"{% if filters.plan == p.pk|stringformat:"s" %} selected{% endif %}>{{ p.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Search</button>
+        {% if is_filtered %}<a href="{% url 'memberships:list' %}" class="btn btn-light border" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+  {% if memberships %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Member</th><th>Plan</th><th>Period</th><th class="text-end d-none d-md-table-cell">Agreed price</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for m in memberships %}
+        <tr>
+          <td><a href="{{ m.member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ m.member.full_name }}</a><div class="small text-muted font-monospace">{{ m.member.member_id }}</div></td>
+          <td>{{ m.plan_name }}<div class="small text-muted">{{ m.get_kind_display }}</div></td>
+          <td class="small text-nowrap">{{ m.start_date|date:"d M Y" }} –<br>{{ m.end_date|date:"d M Y" }}</td>
+          <td class="text-end d-none d-md-table-cell text-nowrap">{{ m.price|money }}</td>
+          <td>{% include "components/membership_badge.html" %}</td>
+          <td class="text-end"><a href="{{ m.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% elif is_filtered %}
+    {% url 'memberships:list' as reset_url %}
+    {% include "components/empty_state.html" with icon="search" title="No matching memberships" message="Try a different search or clear the filters." action_url=reset_url action_label="Clear filters" action_icon="x-lg" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="card-checklist" title="No memberships yet" message="Assign a plan from a member's profile to create the first membership." %}
+  {% endif %}
+</div>
+{% endblock %}

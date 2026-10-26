@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block page_actions %}{% if perms.accounts.manage_training %}<a href="{% url 'nutrition:plan_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New meal plan</a>{% endif %}{% endblock %}
+{% block content %}
+{% include "nutrition/_disclaimer.html" %}
+<div class="card">
+  {% if plans %}
+  <ul class="list-group list-group-flush">{% for p in plans %}<li class="list-group-item d-flex justify-content-between align-items-center"><a href="{{ p.get_absolute_url }}" class="text-body"><span class="fw-semibold">{{ p.name }}</span><div class="small text-muted">{{ p.meal_count }} meal{{ p.meal_count|pluralize }}{% if p.goal %} · {{ p.goal }}{% endif %}</div></a></li>{% endfor %}</ul>
+  {% include "components/pagination.html" %}
+  {% else %}{% include "components/empty_state.html" with icon="egg-fried" title="No meal plan templates" message="Create reusable meal plans, then assign copies to members. This module is optional." %}{% endif %}
+</div>
+{% endblock %}

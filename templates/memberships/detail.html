@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load ui_tags payments_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ membership.member.member_id }} · {{ membership.get_kind_display }}</p>{% endblock %}
+{% block page_actions %}
+{% if can_manage %}
+  {% if can_renew %}<a href="{% url 'memberships:renew' membership.pk %}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Renew / change plan</a>{% endif %}
+  {% if membership.can_suspend %}<button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#suspendModal"><i class="bi bi-pause-circle me-1"></i>Suspend</button>{% endif %}
+  {% if membership.can_reactivate %}
+  <form method="post" action="{% url 'memberships:reactivate' membership.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success" data-confirm="Access resumes today. The end date stays {{ membership.end_date|date:'d M Y' }}." data-confirm-title="Reactivate membership?" data-confirm-label="Reactivate" data-confirm-class="btn-success"><i class="bi bi-play-circle me-1"></i>Reactivate</button>
+  </form>
+  {% endif %}
+  {% if membership.can_cancel %}<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-x-circle me-1"></i>Cancel</button>{% endif %}
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card membership-hero">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>{{ membership.plan_name }}</h2>{% include "components/membership_badge.html" with m=membership %}</div>
+      <div class="card-body">
+        {% if membership.status == "active" or membership.status == "suspended" %}
+          {% widthratio membership.days_remaining membership.total_days 100 as left_pct %}
+          <div class="d-flex justify-content-between small text-muted mb-1"><span>{{ membership.start_date|date:"d M Y" }}</span><span>{{ membership.days_remaining }} of {{ membership.total_days }} days left</span><span>{{ membership.end_date|date:"d M Y" }}</span></div>
+          <div class="period-bar mb-4" role="progressbar" aria-valuenow="{{ left_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Days remaining"><span style="width: {{ left_pct }}%"></span></div>
+        {% endif %}
+        <div class="row">
+          <div class="col-sm-6">
+            <dl class="detail-list">
+              <dt>Member</dt><dd><a href="{{ membership.member.get_absolute_url }}">{{ membership.member.full_name }}</a></dd>
+              <dt>Period</dt><dd>{{ membership.start_date|date:"d M Y" }} – {{ membership.end_date|date:"d M Y" }}</dd>
+              <dt>Duration</dt><dd>{{ membership.duration_display }} ({{ membership.total_days }} days)</dd>
+              <dt>Access</dt><dd>{{ membership.access_summary }}</dd>
+              {% if membership.previous %}<dt>Renews</dt><dd><a href="{{ membership.previous.get_absolute_url }}">{{ membership.previous.plan_name }} ending {{ membership.previous.end_date|date:"d M Y" }}</a></dd>{% endif %}
+            </dl>
+          </div>
+          <div class="col-sm-6">
+            <dl class="detail-list">
+              <dt>Agreed price</dt><dd>{{ membership.price|money }}</dd>
+              <dt>Created</dt><dd>{{ membership.created_at|date:"d M Y H:i" }}{% if membership.created_by %} by {{ membership.created_by }}{% endif %}</dd>
+              {% if membership.notes %}<dt>Notes</dt><dd>{{ membership.notes }}</dd>{% endif %}
+            </dl>
+          </div>
+        </div>
+        {% if membership.suspended_on %}<div class="alert alert-warning small mb-0"><i class="bi bi-pause-circle me-1"></i>Suspended since {{ membership.suspended_on|date:"d M Y" }}. The end date is not extended while suspended.</div>{% endif %}
+        {% if membership.cancelled_on %}<div class="alert alert-secondary small mb-0"><i class="bi bi-x-circle me-1"></i>Cancelled on {{ membership.cancelled_on|date:"d M Y" }}: {{ membership.cancellation_reason }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="mt-4">{% membership_payments membership %}</div>
+    <div class="card mt-4">
+      <div class="card-body small text-muted">
+        <i class="bi bi-info-circle me-1"></i>The plan name, duration and price above were fixed when this membership was created.
+        {% if membership.plan.name != membership.plan_name or membership.plan.price != membership.price %}The plan has since changed (now <a href="{{ membership.plan.get_absolute_url }}">{{ membership.plan.name }}, {{ membership.plan.price|money }}</a>); this membership keeps its original terms.{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header"><h2>History</h2></div>
+      <div class="card-body">
+        {% if events %}
+        <ul class="timeline">
+          {% for e in events %}
+          <li>
+            <span class="activity-icon bg-{{ e.color }}-subtle text-{{ e.color }}-emphasis"><i class="bi bi-{{ e.icon }}"></i></span>
+            <div class="fw-semibold">{{ e.get_event_type_display }}</div>
+            {% if e.note %}<div class="small">{{ e.note }}</div>{% endif %}
+            <div class="activity-meta">{{ e.created_at|date:"d M Y H:i" }}{% if e.performed_by %} · {{ e.performed_by }}{% endif %}</div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          {% include "components/empty_state.html" with icon="clock-history" title="No events" %}
+        {% endif %}
+      </div>
+    </div>
+    {% if other_periods %}
+    <div class="card">
+      <div class="card-header"><h2>Other periods</h2></div>
+      <ul class="list-group list-group-flush">
+        {% for m in other_periods %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <a href="{{ m.get_absolute_url }}" class="text-body small"><span class="fw-semibold">{{ m.plan_name }}</span><br>{{ m.start_date|date:"d M Y" }} – {{ m.end_date|date:"d M Y" }}</a>
+          {% include "components/membership_badge.html" %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% if can_manage %}
+  {% if membership.can_suspend %}
+    {% url 'memberships:suspend' membership.pk as suspend_url %}
+    {% include "components/reason_modal.html" with id="suspendModal" action=suspend_url title="Suspend membership?" message="Access stops immediately. Under the gym's policy the end date does NOT move: suspended days are not added back." button_label="Suspend" button_class="btn-warning" placeholder="e.g. Medical leave" %}
+  {% endif %}
+  {% if membership.can_cancel %}
+    {% url 'memberships:cancel' membership.pk as cancel_url %}
+    {% include "components/reason_modal.html" with id="cancelModal" action=cancel_url title="Cancel membership?" message="Cancellation takes effect today and can't be undone. Unused days are recorded; any refund must be handled through payments." button_label="Cancel membership" button_class="btn-danger" placeholder="e.g. Member request" %}
+  {% endif %}
+{% endif %}
+{% endblock %}

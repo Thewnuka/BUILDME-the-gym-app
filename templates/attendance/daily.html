@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{{ day|date:"l, d F Y" }}</p>{% endblock %}
+{% block page_actions %}
+<a href="?date={{ prev_day|date:'Y-m-d' }}" class="btn btn-light border" aria-label="Previous day"><i class="bi bi-chevron-left"></i></a>
+<form method="get" class="d-flex gap-2"><input type="date" name="date" class="form-control" value="{{ day|date:'Y-m-d' }}" aria-label="Report date" data-auto-submit></form>
+{% if next_day %}<a href="?date={{ next_day|date:'Y-m-d' }}" class="btn btn-light border" aria-label="Next day"><i class="bi bi-chevron-right"></i></a>{% endif %}
+<button type="button" class="btn btn-light border" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+{% endblock %}
+{% block content %}
+{% include "attendance/_tabs.html" %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Visits</div><div class="stat-value">{{ stats.visits }}</div><div class="stat-note">{{ stats.members }} unique member{{ stats.members|pluralize }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Average stay</div><div class="stat-value">{% if stats.avg_minutes is not None %}{{ stats.avg_minutes }}<span class="fs-6"> min</span>{% else %}—{% endif %}</div><div class="stat-note">Checked-out visits only</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Peak hour</div><div class="stat-value">{% if stats.peak %}{{ stats.peak.0|stringformat:"02d" }}:00{% else %}—{% endif %}</div><div class="stat-note">{% if stats.peak %}{{ stats.peak.1 }} check-in{{ stats.peak.1|pluralize }}{% endif %}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Follow-up</div><div class="stat-value">{{ stats.with_balance }}</div><div class="stat-note">entered with a balance due · {{ stats.no_checkout }} without check-out</div></div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card h-100">
+      <div class="card-header"><h2>Check-ins by hour</h2></div>
+      <div class="card-body">
+        {% if stats.visits %}
+        <div class="chart-box"><div class="skeleton" aria-hidden="true"></div><canvas id="hourlyChart" role="img" aria-label="Check-ins by hour"></canvas></div>
+        {{ chart|json_script:"hourlyData" }}
+        {% else %}
+          {% include "components/empty_state.html" with icon="bar-chart" title="No check-ins on this day" %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><h2>By plan</h2></div>
+      {% if by_plan %}
+      <ul class="list-group list-group-flush">{% for name, count in by_plan %}<li class="list-group-item d-flex justify-content-between"><span>{{ name }}</span><span class="fw-semibold">{{ count }}</span></li>{% endfor %}</ul>
+      {% else %}<div class="card-body text-muted small">No visits.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% if visits %}
+<div class="card table-card mt-4">
+  <div class="card-header"><h2>All visits</h2></div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Member</th><th>In</th><th>Out</th><th>Duration</th><th class="d-none d-md-table-cell">Plan</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for v in visits %}
+        <tr>
+          <td><a href="{{ v.member.get_absolute_url }}" class="text-body fw-semibold text-decoration-none">{{ v.member.full_name }}</a></td>
+          <td class="small">{{ v.checked_in_at|time:"H:i" }}</td>
+          <td class="small">{% if v.checked_out_at %}{{ v.checked_out_at|time:"H:i" }}{% else %}—{% endif %}</td>
+          <td class="small">{{ v.duration_display }}</td>
+          <td class="small d-none d-md-table-cell">{{ v.membership.plan_name }}</td>
+          <td><span class="badge bg-{{ v.status_badge }}-subtle text-{{ v.status_badge }}-emphasis">{{ v.status_label }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if stats.visits %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () { GymCharts.bar("hourlyChart", "hourlyData", { label: "Check-ins" }); });</script>
+{% endif %}
+{% endblock %}

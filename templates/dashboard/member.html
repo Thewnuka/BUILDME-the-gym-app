@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load payments_tags attendance_tags %}
+{% block page_header %}{% endblock %}
+{% block content %}
+{% for a in announcements %}
+<div class="alert alert-{% if a.kind == 'closure' %}danger{% elif a.kind == 'operational' %}warning{% else %}info{% endif %} d-flex gap-3 align-items-start">
+  <i class="bi bi-megaphone fs-5"></i>
+  <div class="flex-grow-1"><strong>{{ a.title }}</strong> <span class="small">· {{ a.get_kind_display }}</span><div class="small">{{ a.body|truncatechars:220 }}</div></div>
+  <a href="{{ a.get_absolute_url }}" class="btn btn-sm btn-light border text-nowrap">Read</a>
+</div>
+{% endfor %}
+{% if setup_required %}
+<div class="alert alert-warning d-flex gap-3 align-items-start" role="alert">
+  <i class="bi bi-tools fs-4"></i>
+  <div>
+    <strong>Setup not finished: there is no administrator account yet.</strong>
+    Gym management features (members, plans, memberships, payments, attendance, users) are only shown to staff accounts.
+    To create the first administrator, run this in the project folder on the server, then sign in with the new account:
+    <code class="d-block mt-2 p-2 bg-white rounded border">python manage.py createsuperuser</code>
+  </div>
+</div>
+{% endif %}
+<div class="card welcome-banner mb-4">
+  <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <div class="text-muted-light small text-uppercase fw-semibold" style="letter-spacing:.1em">{{ today|date:"l, F j" }}</div>
+      <h1 class="h2 mb-1 mt-1">Hi, {{ user.first_name|default:user.username }}</h1>
+      <p class="text-muted-light mb-0">Ready for today's session? Here's your account at a glance.</p>
+    </div>
+    <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Update my details</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    {% include "accounts/_user_summary.html" with profile_user=user %}
+  </div>
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="stat-label mb-2"><i class="bi bi-card-checklist me-1"></i>My membership</div>
+            {% if my_current %}
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div class="h5 mb-1">{{ my_current.plan_name }}</div>
+                {% include "components/membership_badge.html" with m=my_current %}
+              </div>
+              <div class="text-muted small">{{ my_current.start_date|date:"d M Y" }} – {{ my_current.end_date|date:"d M Y" }}</div>
+              <div class="stat-value mt-2">{{ my_current.days_remaining }}</div>
+              <div class="stat-note">day{{ my_current.days_remaining|pluralize }} remaining</div>
+              {% if my_next %}<div class="small mt-2"><i class="bi bi-calendar-event me-1"></i>Next: {{ my_next.plan_name }} from {{ my_next.start_date|date:"d M Y" }}</div>{% endif %}
+            {% elif my_next %}
+              <p class="mb-0">Your {{ my_next.plan_name }} membership starts on <strong>{{ my_next.start_date|date:"d M Y" }}</strong>.</p>
+            {% elif my_memberships %}
+              {% include "components/empty_state.html" with icon="hourglass-bottom" title="Membership expired" message="Visit the front desk to renew." %}
+            {% else %}
+              {% include "components/empty_state.html" with icon="card-checklist" title="No membership yet" message="Visit the front desk to choose a plan." %}
+            {% endif %}
+            {% if profile %}<div class="small text-muted mt-3">Member ID: <span class="font-monospace">{{ profile.member_id }}</span></div>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <div class="stat-label mb-2 text-start"><i class="bi bi-qr-code me-1"></i>My check-in pass</div>
+            {% if profile %}
+              <div class="d-inline-block p-2 bg-white rounded-3 border">{% checkin_qr profile %}</div>
+              <p class="small text-muted mt-2 mb-1">Show this at the front desk to check in.</p>
+              <a href="{% url 'attendance:pass' profile.pk %}" class="small fw-semibold">Open full-size pass</a>
+            {% else %}
+              {% include "components/empty_state.html" with icon="qr-code" title="No member profile" message="Please contact the front desk." %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% if profile %}
+      <div class="col-md-6">{% member_attendance profile %}</div>
+      <div class="col-md-6">{% member_payments profile %}</div>
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+              <div class="stat-label mb-1"><i class="bi bi-lightning-charge me-1"></i>My training</div>
+              {% if next_session %}<div>Next session: <strong>{{ next_session.starts_at|date:"D d M, H:i" }}</strong> with {{ next_session.trainer.name }}</div>
+              {% else %}<div class="text-muted small">No session booked.</div>{% endif %}
+              {% if current_plan %}<div class="small">Current plan: <a href="{{ current_plan.get_absolute_url }}">{{ current_plan.name }}</a></div>{% endif %}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{% url 'workouts:my' %}" class="btn btn-light border">Open My Training</a>
+              <a href="{% url 'appointments:my_book' %}" class="btn btn-primary"><i class="bi bi-calendar-plus me-1"></i>Book a session</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>My recent activity</h2></div>
+      <div class="card-body">{% include "components/activity_feed.html" with activities=activities %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

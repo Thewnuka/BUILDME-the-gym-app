@@ -1,0 +1,13 @@
+<div class="toast-stack" aria-live="polite" aria-atomic="true">
+  {% for message in messages %}
+  {% with level=message.tags|default:"info" %}
+  <div class="toast toast-{{ level }} mb-2" role="{% if level == 'error' %}alert{% else %}status{% endif %}">
+    <div class="toast-body">
+      <i class="toast-icon bi {% if level == 'success' %}bi-check-circle-fill{% elif level == 'error' %}bi-x-octagon-fill{% elif level == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+      <div class="flex-grow-1">{{ message }}</div>
+      <button type="button" class="btn-close btn-sm" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>

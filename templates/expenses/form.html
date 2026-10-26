@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8"><div class="card"><div class="card-body">
+    {% include "components/form_errors.html" %}
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      <div class="row g-3">
+        {% form_field form.category "col-md-6" %}{% form_field form.amount "col-md-3" %}{% form_field form.expense_date "col-md-3" %}
+        {% form_field form.description %}
+        {% form_field form.supplier "col-md-6" %}{% form_field form.invoice_number "col-md-6" %}
+        {% form_field form.receipt %}
+        <div class="col-12 d-flex gap-2"><button class="btn btn-primary" data-loading-text="Saving…">Save expense</button><a href="{% url 'expenses:list' %}" class="btn btn-light border">Cancel</a></div>
+      </div>
+    </form>
+  </div></div></div>
+  <div class="col-xl-4"><div class="card"><div class="card-body small text-muted">
+    <p><i class="bi bi-info-circle text-primary me-1"></i>Repair costs, stock purchases and equipment purchases are added <strong>automatically</strong> as linked expenses when staff record them. Don't enter them again here.</p>
+    <p class="mb-0">Trainer pay records are private and not counted. Record payroll here as a <strong>Salaries &amp; wages</strong> expense (e.g. one monthly total).</p>
+  </div></div></div>
+</div>
+{% endblock %}

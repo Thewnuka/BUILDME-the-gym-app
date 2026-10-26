@@ -1,0 +1,31 @@
+{% extends "layouts/skeleton.html" %}
+{% block body %}
+<div class="auth-wrapper">
+  <section class="auth-hero">
+    <div class="d-flex align-items-center gap-2">
+      <span class="brand-mark"><i class="bi bi-lightning-charge-fill"></i></span>
+      <span class="brand-name">{{ GYM_NAME }}</span>
+    </div>
+    <div>
+      <h1 class="mb-3">Train hard.<br>Run smarter.</h1>
+      <p class="lead mb-4">One place to manage members, memberships, attendance, trainers and revenue.</p>
+      <div class="auth-feature"><i class="bi bi-check-circle-fill"></i> Role-based access for every team member</div>
+      <div class="auth-feature"><i class="bi bi-check-circle-fill"></i> Live dashboard and activity tracking</div>
+      <div class="auth-feature"><i class="bi bi-check-circle-fill"></i> Secure accounts and password recovery</div>
+    </div>
+    <small class="text-white-50">&copy; {% now "Y" %} {{ GYM_NAME }}</small>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="d-flex d-lg-none align-items-center gap-2 mb-4">
+        <span class="brand-mark"><i class="bi bi-lightning-charge-fill"></i></span>
+        <span class="brand-name">{{ GYM_NAME }}</span>
+      </div>
+      {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} py-2">{{ message }}</div>
+      {% endfor %}
+      {% block auth_content %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

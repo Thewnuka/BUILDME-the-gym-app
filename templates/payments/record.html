@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        {% if balance.payable <= 0 %}
+          {% include "components/empty_state.html" with icon="check2-circle" title="Nothing payable" message="There is no unpaid balance (pending transfers count until confirmed or voided)." %}
+        {% else %}
+        {% include "components/form_errors.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form.submission_token }}
+          <div class="row g-3">
+            {% form_field form.amount "col-md-6" %}
+            {% form_field form.paid_on "col-md-6" %}
+            {% form_field form.method "col-md-6" %}
+            {% form_field form.external_reference "col-md-6" %}
+            {% form_field form.pending %}
+            {% form_field form.notes %}
+            <div class="col-12 small text-muted"><i class="bi bi-info-circle me-1"></i>Up to {{ balance.payable|money }} can be recorded. Overpayments are not accepted.</div>
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" data-loading-text="Recording…"><i class="bi bi-check2 me-1"></i>Record payment</button>
+              <a href="{{ item.url }}" class="btn btn-light border">Cancel</a>
+            </div>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <p class="small text-muted mt-3"><i class="bi bi-shield-lock me-1"></i>Card numbers are never stored. Record only the terminal approval code or last 4 digits.</p>
+  </div>
+  <div class="col-lg-5">{% include "payments/_balance_summary.html" %}</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var method = document.getElementById("id_method");
+    var pending = document.getElementById("id_pending");
+    if (!method || !pending) return;
+    var wrap = pending.closest(".col-12");
+    function sync() {
+      var isTransfer = method.value === "bank_transfer";
+      wrap.classList.toggle("d-none", !isTransfer);
+      if (!isTransfer) pending.checked = false;
+    }
+    method.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

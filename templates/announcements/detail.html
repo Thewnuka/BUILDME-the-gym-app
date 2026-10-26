@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle"><span class="badge bg-{{ announcement.kind_badge }}-subtle text-{{ announcement.kind_badge }}-emphasis">{{ announcement.get_kind_display }}</span> · {{ announcement.publish_at|date:"d M Y H:i" }}{% if announcement.expires_at %} · until {{ announcement.expires_at|date:"d M Y H:i" }}{% endif %}</p>{% endblock %}
+{% block page_actions %}{% if perms.accounts.manage_announcements %}<a href="{% url 'announcements:update' announcement.pk %}" class="btn btn-light border"><i class="bi bi-pencil me-1"></i>Edit</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row"><div class="col-lg-8"><div class="card"><div class="card-body">
+  <p class="mb-0" style="white-space:pre-line">{{ announcement.body }}</p>
+  {% if perms.accounts.manage_announcements %}<hr><div class="small text-muted">Audience: {{ announcement.audience_label }} · State: {{ announcement.state }}{% if announcement.notified_at %} · notifications sent {{ announcement.notified_at|date:"d M Y H:i" }}{% endif %}</div>{% endif %}
+</div></div></div></div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "layouts/auth.html" %}
+{% load ui_tags %}
+{% block title %}Sign in · {{ GYM_NAME }}{% endblock %}
+{% block auth_content %}
+<h2 class="mb-1">Welcome back</h2>
+<p class="text-muted mb-4">Sign in to your account to continue.</p>
+
+{% include "components/form_errors.html" %}
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="row g-3">
+    {% form_field form.username %}
+    {% form_field form.password %}
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <div class="form-check">
+        {{ form.remember_me }}
+        <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">{{ form.remember_me.label }}</label>
+      </div>
+      <a href="{% url 'accounts:password_reset' %}" class="small fw-semibold">Forgot password?</a>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary w-100 py-2" data-loading-text="Signing in…">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Sign in
+      </button>
+    </div>
+  </div>
+</form>
+{% if REGISTRATION_ENABLED %}
+<div class="d-flex align-items-center gap-3 my-4 text-muted small"><hr class="flex-grow-1 m-0"><span>New to {{ GYM_NAME }}?</span><hr class="flex-grow-1 m-0"></div>
+<a href="{% url 'accounts:register' %}" class="btn btn-outline-primary w-100 py-2"><i class="bi bi-person-plus me-1"></i> Create new account</a>
+{% else %}
+<p class="text-muted small mt-4 mb-0"><i class="bi bi-shield-lock me-1"></i>Accounts are created by gym staff. Contact the front desk if you need access.</p>
+{% endif %}
+{% endblock %}

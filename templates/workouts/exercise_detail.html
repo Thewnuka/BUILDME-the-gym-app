@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">{{ exercise.get_muscle_group_display }} · {{ exercise.get_category_display }}</p>{% endblock %}
+{% block page_actions %}{% if perms.accounts.manage_training %}<a href="{% url 'workouts:exercise_update' exercise.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card"><div class="card-body">
+    {% if exercise.description %}<p class="lead">{{ exercise.description }}</p>{% endif %}
+    <div class="stat-label mb-1">Instructions</div>
+    <p>{{ exercise.instructions|default:"No instructions yet."|linebreaksbr }}</p>
+    {% if exercise.video_url %}<a href="{{ exercise.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-light border"><i class="bi bi-play-btn me-1"></i>Watch demonstration</a>{% endif %}
+  </div></div></div>
+  {% if exercise.image %}<div class="col-lg-5"><div class="card"><img src="{% url 'workouts:exercise_image' exercise.pk %}" class="card-img-top" alt="{{ exercise.name }}"></div></div>{% endif %}
+</div>
+{% endblock %}

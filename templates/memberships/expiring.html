@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Current memberships ending in the next {{ days }} days that haven't been renewed yet.</p>{% endblock %}
+{% block content %}
+{% include "memberships/_tabs.html" %}
+<div class="card table-card">
+  <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-2">
+    <span class="small text-muted me-1">Window:</span>
+    {% for w in windows %}
+      <a href="?days={{ w }}" class="btn btn-sm {% if w == days %}btn-primary{% else %}btn-light border{% endif %}">{{ w }} days</a>
+    {% endfor %}
+  </div>
+  {% if memberships %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Member</th><th class="d-none d-md-table-cell">Phone</th><th>Plan</th><th>Ends</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for m in memberships %}
+        <tr>
+          <td><a href="{{ m.member.get_absolute_url }}" class="fw-semibold text-body text-decoration-none">{{ m.member.full_name }}</a><div class="small text-muted font-monospace">{{ m.member.member_id }}</div></td>
+          <td class="d-none d-md-table-cell">{{ m.member.phone|default:"—" }}</td>
+          <td>{{ m.plan_name }}</td>
+          <td class="text-nowrap">{{ m.end_date|date:"d M Y" }}<div class="small {% if m.days_remaining <= 3 %}text-danger fw-semibold{% else %}text-muted{% endif %}">{{ m.days_remaining }} day{{ m.days_remaining|pluralize }} left</div></td>
+          <td>{% include "components/membership_badge.html" %}</td>
+          <td class="text-end">{% if perms.accounts.manage_memberships and m.member.is_active %}<a href="{% url 'memberships:renew' m.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-arrow-repeat me-1"></i>Renew</a>{% else %}<a href="{{ m.get_absolute_url }}" class="btn btn-sm btn-light border">View</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="calendar-check" title="Nothing expiring soon" message="No current memberships end within this window without a renewal." %}
+  {% endif %}
+</div>
+{% endblock %}

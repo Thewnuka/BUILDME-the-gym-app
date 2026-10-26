@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Bookable session lengths and fees. Fees are fixed on each booking when it is made.</p>{% endblock %}
+{% block page_actions %}<a href="{% url 'appointments:session_type_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New session type</a>{% endblock %}
+{% block content %}
+<div class="card table-card">
+  {% if session_types %}
+  <div class="table-responsive"><table class="table align-middle">
+    <thead><tr><th>Name</th><th>Duration</th><th class="text-end">Fee</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for s in session_types %}<tr><td class="fw-semibold">{{ s.name }}<div class="small text-muted fw-normal">{{ s.description }}</div></td><td>{{ s.duration_minutes }} min</td><td class="text-end">{% if s.fee %}{{ s.fee|money }}{% else %}No fee{% endif %}</td><td>{% if s.is_active %}<span class="badge bg-success-subtle text-success-emphasis">Bookable</span>{% else %}<span class="badge bg-secondary-subtle text-secondary-emphasis">Hidden</span>{% endif %}</td><td class="text-end"><a href="{% url 'appointments:session_type_update' s.pk %}" class="btn btn-sm btn-light border">Edit</a></td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}{% url 'appointments:session_type_create' as u %}{% include "components/empty_state.html" with icon="stopwatch" title="No session types" message="Create at least one (e.g. '60-minute personal training') before booking." action_url=u action_label="New session type" %}{% endif %}
+</div>
+{% endblock %}

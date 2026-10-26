@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">{{ appointment.starts_at|date:"l d F Y, H:i" }}–{{ appointment.ends_at|time:"H:i" }}</p>{% endblock %}
+{% block page_actions %}
+{% if appointment.member_can_change %}
+<a href="{% url 'appointments:my_reschedule' appointment.pk %}" class="btn btn-outline-primary"><i class="bi bi-calendar-event me-1"></i>Reschedule</a>
+<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel session</button>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>{{ appointment.session_type.name }}</h2>{% include "appointments/_badge.html" with a=appointment %}</div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">{% include "trainers/_avatar.html" with t=appointment.trainer size="lg" %}<div><div class="fw-semibold">{{ appointment.trainer.name }}</div><div class="small text-muted">{{ appointment.duration_minutes }} minutes</div></div></div>
+        {% if appointment.notes %}<p class="mb-2">{{ appointment.notes }}</p>{% endif %}
+        {% if balance %}<p class="mb-0">Fee: {{ balance.charge|money }} · {% include "payments/_balance_badge.html" with b=balance %}</p>{% endif %}
+        {% if appointment.status == "booked" and not appointment.member_can_change %}<div class="alert alert-info small mt-3 mb-0">This session starts within {{ cutoff }} hours. To change it, please contact the front desk.</div>{% endif %}
+        {% if appointment.status == "cancelled" %}<div class="alert alert-secondary small mt-3 mb-0">Cancelled: {{ appointment.cancellation_reason }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% if appointment.member_can_change %}{% url 'appointments:my_cancel' appointment.pk as cancel_url %}{% include "components/reason_modal.html" with id="cancelModal" action=cancel_url title="Cancel this session?" message="Your trainer will be notified." button_label="Cancel session" button_class="btn-danger" placeholder="e.g. Can't make it" %}{% endif %}
+{% endblock %}

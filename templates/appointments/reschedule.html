@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h2>Current booking</h2></div>
+      <div class="card-body">
+        <div class="fw-semibold">{{ appointment.session_type.name }} with {{ appointment.trainer.name }}</div>
+        <div class="text-muted">{{ appointment.starts_at|date:"l d F, H:i" }}</div>
+        <form method="get" class="mt-3">
+          <label class="form-label" for="day">New date</label>
+          <div class="d-flex gap-2"><input type="date" name="day" id="day" class="form-control" value="{{ day|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}"><button class="btn btn-dark" data-no-loading>Show</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h2>Free times on {{ day|date:"l d F" }}</h2></div>
+      <div class="card-body">
+        {% if slots %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            {% for s in slots %}<input type="radio" class="btn-check" name="start" id="rs{{ forloop.counter }}" value="{{ s.isoformat }}" required><label class="btn btn-outline-primary" for="rs{{ forloop.counter }}">{{ s|time:"H:i" }}</label>{% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary" data-loading-text="Saving…">Move session</button>
+        </form>
+        {% else %}
+          {% include "components/empty_state.html" with icon="calendar-x" title="No free times" message="Try another date." %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

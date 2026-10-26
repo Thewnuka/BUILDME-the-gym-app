@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row"><div class="col-xl-8"><div class="card"><div class="card-body">
+  {% include "components/form_errors.html" %}
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    <div class="row g-3">
+      {% form_field form.name "col-md-6" %}{% form_field form.muscle_group "col-md-3" %}{% form_field form.category "col-md-3" %}
+      {% form_field form.description %}{% form_field form.instructions %}
+      {% form_field form.image "col-md-6" %}{% form_field form.video_url "col-md-6" %}{% form_field form.is_active %}
+      <div class="col-12 d-flex gap-2"><button class="btn btn-primary" data-loading-text="Saving…">Save exercise</button><a href="{% url 'workouts:exercises' %}" class="btn btn-light border">Cancel</a></div>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Audit trail of sign-ins and account changes.</p>{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-center" role="search">
+      <div class="col-md-6">{% include "components/search_input.html" with value=filters.q placeholder="Search description or username" %}</div>
+      <div class="col-8 col-md-4">
+        <select name="action" class="form-select" data-auto-submit aria-label="Filter by action">
+          <option value="">All actions</option>
+          {% for value, label in actions %}<option value="{{ value }}"{% if filters.action == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-4 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Search</button>
+        {% if is_filtered %}<a href="{% url 'accounts:activity_log' %}" class="btn btn-light border" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+  {% if activities %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>When</th><th>Action</th><th>Description</th><th class="d-none d-md-table-cell">User</th><th class="d-none d-lg-table-cell">IP address</th></tr></thead>
+      <tbody>
+        {% for a in activities %}
+        <tr>
+          <td class="text-nowrap small">{{ a.created_at|date:"M j, Y H:i" }}</td>
+          <td><span class="badge bg-{{ a.color }}-subtle text-{{ a.color }}-emphasis"><i class="bi bi-{{ a.icon }} me-1"></i>{{ a.get_action_display }}</span></td>
+          <td>{{ a.description }}</td>
+          <td class="d-none d-md-table-cell">{% if a.actor %}{{ a.actor }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="d-none d-lg-table-cell text-muted small">{{ a.ip_address|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="clock-history" title="No activity found" message="Nothing matches the current filters." %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_actions %}<a href="{% url 'appointments:my_book' %}" class="btn btn-primary"><i class="bi bi-calendar-plus me-1"></i>Book a session</a>{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header"><h2>My workout plan</h2></div>
+      {% if current_plans %}
+      <ul class="list-group list-group-flush">{% for p in current_plans %}<li class="list-group-item d-flex justify-content-between align-items-center"><a href="{{ p.get_absolute_url }}" class="text-body"><span class="fw-semibold">{{ p.name }}</span><div class="small text-muted">{{ p.start_date|date:"d M" }}{% if p.end_date %} – {{ p.end_date|date:"d M Y" }}{% endif %}{% if p.goal %} · {{ p.goal }}{% endif %}</div></a><a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-success">Open &amp; log</a></li>{% endfor %}</ul>
+      {% else %}{% include "components/empty_state.html" with icon="lightning-charge" title="No current plan" message="Your trainer will assign a workout plan here." %}{% endif %}
+      {% if other_plans %}<div class="card-body border-top small"><div class="stat-label mb-1">Previous plans</div>{% for p in other_plans %}<div><a href="{{ p.get_absolute_url }}">{{ p.name }}</a> · {{ p.start_date|date:"d M Y" }}</div>{% endfor %}</div>{% endif %}
+    </div>
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><h2>Upcoming sessions</h2><a href="{% url 'appointments:my_list' %}" class="small fw-semibold">All sessions</a></div>
+      {% if upcoming %}<ul class="list-group list-group-flush">{% for a in upcoming %}<li class="list-group-item"><a href="{% url 'appointments:my_detail' a.pk %}" class="text-body"><span class="fw-semibold">{{ a.starts_at|date:"D d M, H:i" }}</span> · {{ a.session_type.name }} with {{ a.trainer.name }}</a></li>{% endfor %}</ul>
+      {% else %}<div class="card-body small text-muted">No sessions booked.</div>{% endif %}
+    </div>
+    {% if recent_logs %}
+    <div class="card"><div class="card-header"><h2>Recent workouts</h2></div><ul class="list-group list-group-flush small">{% for l in recent_logs %}<li class="list-group-item">{{ l.performed_on|date:"D d M" }} · {{ l.plan_name }} · {{ l.day_label }}</li>{% endfor %}</ul></div>
+    {% endif %}
+  </div>
+  <div class="col-lg-4 d-flex flex-column gap-4">
+    <div class="card"><div class="card-header"><h2>My trainers</h2></div>
+      {% if trainers %}<ul class="list-group list-group-flush">{% for a in trainers %}<li class="list-group-item d-flex align-items-center gap-2">{% include "trainers/_avatar.html" with t=a.trainer size="sm" %}<div><div class="fw-semibold">{{ a.trainer.name }}</div><div class="small text-muted">{% if a.goal %}Goal: {{ a.goal }}{% else %}{{ a.trainer.specialties }}{% endif %}</div></div></li>{% endfor %}</ul>
+      {% else %}<div class="card-body small text-muted">No trainer assigned yet. Ask at the front desk.</div>{% endif %}
+    </div>
+    <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><h2>My progress</h2><a href="{% url 'workouts:my_progress' %}" class="small fw-semibold">Open</a></div>
+      <div class="card-body">{% if latest_progress %}<div class="small text-muted">Last entry {{ latest_progress.recorded_on|date:"d M Y" }}</div>{% if latest_progress.weight_kg %}<div class="stat-value">{{ latest_progress.weight_kg }}<span class="fs-6"> kg</span></div>{% endif %}{% else %}<p class="small text-muted mb-0">Record your weight and measurements to track your progress.</p>{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

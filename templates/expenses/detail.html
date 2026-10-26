@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block page_actions %}
+{% if can_manage and not expense.is_linked %}<a href="{% url 'expenses:update' expense.pk %}" class="btn btn-light border"><i class="bi bi-pencil me-1"></i>Edit</a>{% endif %}
+{% if can_manage %}<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#voidModal"><i class="bi bi-slash-circle me-1"></i>Void</button>{% endif %}
+{% endblock %}
+{% block content %}
+{% if expense.status == "voided" %}<div class="alert alert-secondary">Voided {{ expense.voided_at|date:"d M Y H:i" }} by {{ expense.voided_by }}: {{ expense.void_reason }}. Not counted in totals.</div>{% endif %}
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card"><div class="card-body">
+    <div class="stat-value mb-3">{{ expense.amount|money }}</div>
+    <div class="row"><div class="col-sm-6"><dl class="detail-list">
+      <dt>Reference</dt><dd class="font-monospace">{{ expense.reference }}</dd>
+      <dt>Category</dt><dd>{{ expense.get_category_display }}{% if expense.is_capital %} <span class="badge bg-info-subtle text-info-emphasis">capital</span>{% endif %}</dd>
+      <dt>Date</dt><dd>{{ expense.expense_date|date:"d M Y" }}</dd>
+      <dt>Description</dt><dd>{{ expense.description }}</dd>
+    </dl></div><div class="col-sm-6"><dl class="detail-list">
+      <dt>Supplier</dt><dd>{{ expense.supplier.name|default:"—" }}</dd>
+      <dt>Invoice / bill no.</dt><dd>{{ expense.invoice_number|default:"—" }}</dd>
+      <dt>Source</dt><dd>{{ expense.get_source_display }}{% if source %}: <a href="{{ source.get_absolute_url }}">{{ source }}</a>{% endif %}</dd>
+      <dt>Recorded</dt><dd>{{ expense.created_at|date:"d M Y H:i" }} by {{ expense.recorded_by }}</dd>
+    </dl></div></div>
+    {% if expense.is_linked %}<div class="alert alert-info small mb-0">This expense was created automatically from {{ expense.get_source_display|lower }}, so it can't be edited separately. Void it if the source was recorded by mistake.</div>{% endif %}
+  </div></div></div>
+  <div class="col-lg-5"><div class="card"><div class="card-header"><h2>Receipt</h2></div><div class="card-body">
+    {% if expense.receipt %}<a href="{% url 'expenses:receipt' expense.pk %}" target="_blank" rel="noopener" class="btn btn-light border"><i class="bi bi-paperclip me-1"></i>Open attached receipt</a>
+    {% else %}<p class="small text-muted mb-0">No receipt attached.</p>{% endif %}
+  </div></div></div>
+</div>
+{% if can_manage %}{% url 'expenses:void' expense.pk as void_url %}{% include "components/reason_modal.html" with id="voidModal" action=void_url title="Void this expense?" message="It stays in the records, marked void, and stops counting in totals and reports." button_label="Void expense" button_class="btn-danger" placeholder="e.g. Entered twice" %}{% endif %}
+{% endblock %}

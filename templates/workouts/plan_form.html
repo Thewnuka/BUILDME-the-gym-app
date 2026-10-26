@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block content %}
+<div class="row"><div class="col-xl-8"><div class="card"><div class="card-body">
+  {% if member %}<p class="small text-muted">This plan is for <strong>{{ member.full_name }}</strong> only.</p>{% endif %}
+  {% include "components/form_errors.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% if member and not object %}<input type="hidden" name="member" value="{{ member.pk }}">{% endif %}
+    <div class="row g-3">
+      {% form_field form.name "col-md-7" %}{% form_field form.goal "col-md-5" %}{% form_field form.description %}
+      {% if form.start_date %}{% form_field form.start_date "col-md-6" %}{% form_field form.end_date "col-md-6" %}{% endif %}
+      <div class="col-12 d-flex gap-2"><button class="btn btn-primary" data-loading-text="Saving…">Save plan</button><a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'workouts:plans' %}{% endif %}" class="btn btn-light border">Cancel</a></div>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

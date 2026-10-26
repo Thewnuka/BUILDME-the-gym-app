@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block page_actions %}<a href="{% url 'appointments:my_book' %}" class="btn btn-primary"><i class="bi bi-calendar-plus me-1"></i>Book a session</a>{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header"><h2>Upcoming</h2></div>
+      {% if upcoming %}
+      <ul class="list-group list-group-flush">
+        {% for a in upcoming %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <a href="{% url 'appointments:my_detail' a.pk %}" class="text-body"><span class="fw-semibold">{{ a.starts_at|date:"D d M, H:i" }}</span><br><span class="small text-muted">{{ a.session_type.name }} with {{ a.trainer.name }}</span></a>
+          {% include "appointments/_badge.html" %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}{% include "components/empty_state.html" with icon="calendar-week" title="No upcoming sessions" message="Book a session with your trainer." %}{% endif %}
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>History</h2></div>
+      {% if past %}
+      <ul class="list-group list-group-flush small">
+        {% for a in past %}<li class="list-group-item d-flex justify-content-between"><a href="{% url 'appointments:my_detail' a.pk %}" class="text-body">{{ a.starts_at|date:"d M Y, H:i" }} · {{ a.session_type.name }} with {{ a.trainer.name }}</a>{% include "appointments/_badge.html" %}</li>{% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">No past sessions.</div>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h2>My trainers</h2></div>
+      {% if trainers %}
+      <ul class="list-group list-group-flush">{% for a in trainers %}<li class="list-group-item d-flex align-items-center gap-2">{% include "trainers/_avatar.html" with t=a.trainer size="sm" %}<div><div class="fw-semibold">{{ a.trainer.name }}</div><div class="small text-muted">{{ a.trainer.specialties }}</div></div></li>{% endfor %}</ul>
+      {% else %}<div class="card-body small text-muted">No trainer assigned yet. Ask at the front desk.</div>{% endif %}
+      <div class="card-body small text-muted border-top">You can change or cancel a session online up to {{ cutoff }} hours before it starts.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

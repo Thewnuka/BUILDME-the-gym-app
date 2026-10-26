@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Every payment and refund. Voided entries are kept for the audit trail.</p>{% endblock %}
+{% block content %}
+{% include "payments/_tabs.html" %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Received</div><div class="stat-value stat-value-sm">{{ totals.received|money }}</div><div class="stat-note">Completed payments in view</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Refunded</div><div class="stat-value stat-value-sm text-danger">{{ totals.refunded|money }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Net collected</div><div class="stat-value stat-value-sm text-success">{{ totals.net|money }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Pending</div><div class="stat-value stat-value-sm text-warning-emphasis">{{ totals.pending|money }}</div><div class="stat-note">Not yet collected</div></div></div></div>
+</div>
+<div class="card table-card">
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2 align-items-end" role="search">
+      <div class="col-lg-6"><label class="form-label small" for="q">Search</label>{% include "components/search_input.html" with value=filters.q placeholder="Reference, receipt, member or bank ref" %}</div>
+      <div class="col-6 col-md-3 col-lg-3"><label class="form-label small" for="date_from">From</label><input type="date" name="date_from" id="date_from" class="form-control" value="{{ filters.date_from|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3 col-lg-3"><label class="form-label small" for="date_to">To</label><input type="date" name="date_to" id="date_to" class="form-control" value="{{ filters.date_to|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="kind">Type</label>
+        <select name="kind" id="kind" class="form-select" data-auto-submit><option value="">All</option>{% for v, l in kinds %}<option value="{{ v }}"{% if filters.kind == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="status">Status</label>
+        <select name="status" id="status" class="form-select" data-auto-submit><option value="">All</option>{% for v, l in statuses %}<option value="{{ v }}"{% if filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="method">Method</label>
+        <select name="method" id="method" class="form-select" data-auto-submit><option value="">All</option>{% for v, l in methods %}<option value="{{ v }}"{% if filters.method == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-dark flex-grow-1" data-no-loading>Apply</button>
+        {% if is_filtered %}<a href="{% url 'payments:list' %}" class="btn btn-light border" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+      </div>
+    </form>
+  </div>
+  {% if payments %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Reference</th><th>Member</th><th>Date</th><th class="d-none d-md-table-cell">Method</th><th class="text-end">Amount</th><th>Status</th><th class="d-none d-lg-table-cell">Recorded by</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr{% if p.status == "voided" %} class="text-muted"{% endif %}>
+          <td><a href="{{ p.get_absolute_url }}" class="font-monospace small text-nowrap">{{ p.reference }}</a>{% if p.receipt_number %}<div class="small text-muted font-monospace text-nowrap">{{ p.receipt_number }}</div>{% endif %}</td>
+          <td><a href="{{ p.member.get_absolute_url }}" class="text-body fw-semibold text-decoration-none">{{ p.member.full_name }}</a><div class="small text-muted">{{ p.item_label }}</div></td>
+          <td class="small text-nowrap">{{ p.paid_on|date:"d M Y" }}</td>
+          <td class="d-none d-md-table-cell small">{{ p.get_method_display }}</td>
+          <td class="text-end text-nowrap{% if p.is_refund %} text-danger{% endif %}{% if p.status == 'voided' %} text-decoration-line-through{% endif %}">{% if p.is_refund %}−{% endif %}{{ p.amount|money }}</td>
+          <td>{% include "payments/_txn_badges.html" %}</td>
+          <td class="d-none d-lg-table-cell small">{{ p.recorded_by }}</td>
+          <td class="text-end"><a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-light border">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" %}
+  {% elif is_filtered %}
+    {% url 'payments:list' as reset_url %}
+    {% include "components/empty_state.html" with icon="search" title="No matching transactions" action_url=reset_url action_label="Clear filters" action_icon="x-lg" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="receipt" title="No payments yet" message="Record payments from a membership or training session page. They will be listed here." %}
+  {% endif %}
+</div>
+{% endblock %}

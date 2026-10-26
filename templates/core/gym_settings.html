@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block subtitle %}<p class="page-subtitle">Business details for receipts and messages, and reminder timing. Leave a field blank to keep the server default.</p>{% endblock %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <div class="card h-100"><div class="card-header"><h2>Business details</h2></div><div class="card-body">
+        <div class="row g-3">
+          {% form_field form.gym_name "col-md-6" %}{% form_field form.business_registration "col-md-6" %}
+          {% form_field form.address %}
+          {% form_field form.phone "col-md-6" %}{% form_field form.email "col-md-6" %}
+          {% form_field form.website %}
+          {% form_field form.receipt_footer %}
+        </div>
+      </div></div>
+    </div>
+    <div class="col-xl-5">
+      <div class="card h-100"><div class="card-header"><h2>Reminders</h2></div><div class="card-body">
+        <div class="row g-3">
+          {% form_field form.membership_expiry_reminder_days %}
+          {% form_field form.expiring_soon_days "col-sm-6" %}{% form_field form.payment_due_reminder_days "col-sm-6" %}
+          {% form_field form.equipment_maintenance_reminder_days "col-sm-6" %}{% form_field form.appointment_reminder_hours "col-sm-6" %}
+        </div>
+        <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Reminders are created by the scheduled task (<code>run_scheduled_tasks</code>). Each reminder is sent once, so changing these values never repeats one already sent.</p>
+      </div></div>
+    </div>
+    <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+      <button class="btn btn-primary" data-loading-text="Saving…"><i class="bi bi-check2 me-1"></i>Save settings</button>
+      {% if object.updated_by %}<span class="small text-muted">Last changed {{ object.updated_at|date:"d M Y H:i" }}{% if object.updated_by %} by {{ object.updated_by }}{% endif %}</span>{% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

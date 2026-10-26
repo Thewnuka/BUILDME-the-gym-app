@@ -1,0 +1,2 @@
+{% comment %}Usage: {% include "components/member_avatar.html" with member=member size="sm|lg" %}{% endcomment %}
+<span class="avatar{% if size %} avatar-{{ size }}{% endif %}">{{ member.initials }}{% if member.photo %}<img src="{% url 'members:photo' member.pk %}" alt="Photo of {{ member.full_name }}" loading="lazy">{% endif %}</span>

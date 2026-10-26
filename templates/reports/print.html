@@ -1,0 +1,26 @@
+{% extends "layouts/skeleton.html" %}
+{% block title %}{{ report.title }} · {{ GYM_NAME }}{% endblock %}
+{% block extra_head %}
+<style>
+  body { background: #fff; font-size: 12px; }
+  .print-wrap { padding: 1.5rem; }
+  table { width: 100%; }
+  th, td { padding: .3rem .5rem !important; }
+  @media print { .no-print { display: none !important; } .print-wrap { padding: 0; } }
+</style>
+{% endblock %}
+{% block body %}
+<div class="print-wrap">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div><div class="fw-bold fs-4" style="color:var(--gym-primary)">{{ GYM_NAME }}</div><h1 class="h4 mb-0">{{ report.title }}</h1>
+      <div class="text-muted">{% if report.uses_dates %}{{ params.date_from|date:"d M Y" }} – {{ params.date_to|date:"d M Y" }}{% else %}As at {{ generated|date:"d M Y" }}{% endif %}{% if params.q %} · search "{{ params.q }}"{% endif %}</div></div>
+    <div class="text-end small text-muted">Generated {{ generated|date:"d M Y H:i" }}<br>by {{ request.user }}<div class="no-print mt-2"><button class="btn btn-sm btn-primary" onclick="window.print()">Print</button></div></div>
+  </div>
+  {% if summary %}<div class="d-flex flex-wrap gap-4 mb-3">{% for label, value in summary %}<div><div class="text-muted small">{{ label }}</div><div class="fw-bold">{{ value }}</div></div>{% endfor %}</div>{% endif %}
+  {% if report.notes %}<p class="small text-muted">{{ report.notes }}</p>{% endif %}
+  <table class="table table-sm table-bordered">
+    <thead><tr>{% for c in report.columns %}<th class="text-{{ c.align }}">{{ c.label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in table %}<tr>{% for value, align in row.cells %}<td class="text-{{ align }}">{{ value }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ report.columns|length }}" class="text-muted">No data.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endblock %}

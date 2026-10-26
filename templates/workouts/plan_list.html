@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_actions %}
+{% if perms.accounts.manage_training %}<a href="{% url 'workouts:measurement_types' %}" class="btn btn-light border"><i class="bi bi-rulers me-1"></i>Measurements</a><a href="{% url 'workouts:plan_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New template</a>{% endif %}
+{% endblock %}
+{% block content %}
+<ul class="nav nav-pills gap-2 mb-3">
+  <li class="nav-item"><a class="nav-link{% if tab == 'templates' %} active{% endif %}" href="?tab=templates">Templates</a></li>
+  <li class="nav-item"><a class="nav-link{% if tab == 'assigned' %} active{% endif %}" href="?tab=assigned">Members' plans</a></li>
+</ul>
+<div class="card table-card">
+  <div class="card-body border-bottom"><form method="get" class="d-flex gap-2" role="search"><input type="hidden" name="tab" value="{{ tab }}">{% include "components/search_input.html" with value=q placeholder="Search plans" %}<button class="btn btn-dark" data-no-loading>Search</button></form></div>
+  {% if plans %}
+  <ul class="list-group list-group-flush">
+    {% for p in plans %}
+    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+      <a href="{{ p.get_absolute_url }}" class="text-body min-w-0"><span class="fw-semibold">{{ p.name }}</span>
+        <div class="small text-muted">{% if p.member %}{{ p.member.full_name }} · {{ p.start_date|date:"d M Y" }}{% if p.end_date %} – {{ p.end_date|date:"d M Y" }}{% endif %}{% else %}{{ p.day_count }} day{{ p.day_count|pluralize }}{% if p.goal %} · {{ p.goal }}{% endif %}{% endif %}</div></a>
+      {% if p.member %}<span class="badge bg-{% if p.is_current %}success{% else %}secondary{% endif %}-subtle text-{% if p.is_current %}success{% else %}secondary{% endif %}-emphasis">{% if p.is_current %}Current{% else %}{{ p.get_status_display }}{% endif %}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% include "components/pagination.html" %}
+  {% else %}
+    {% if tab == "assigned" %}{% include "components/empty_state.html" with icon="person-lines-fill" title="No member plans to show" message="Only plans of members you're allowed to coach are listed." %}
+    {% else %}{% include "components/empty_state.html" with icon="lightning-charge" title="No templates yet" message="Create reusable plans, then assign copies to members." %}{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

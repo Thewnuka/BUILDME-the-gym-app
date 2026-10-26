@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block subtitle %}<p class="page-subtitle">Personal trainers, their specialties and the members they coach.</p>{% endblock %}
+{% block page_actions %}
+{% if perms.accounts.manage_trainers %}<a href="{% url 'appointments:session_types' %}" class="btn btn-light border"><i class="bi bi-stopwatch me-1"></i>Session types</a>{% endif %}
+{% if can_create %}<a href="{% url 'trainers:create' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Add trainer</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2" role="search">
+      <div class="col-md-7">{% include "components/search_input.html" with value=filters.q placeholder="Name or specialty" %}</div>
+      <div class="col-8 col-md-3"><select name="status" class="form-select" data-auto-submit aria-label="Filter by status"><option value="">All statuses</option>{% for v, l in statuses %}<option value="{{ v }}"{% if filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-4 col-md-2"><button type="submit" class="btn btn-dark w-100" data-no-loading>Search</button></div>
+    </form>
+  </div>
+</div>
+{% if trainers %}
+<div class="row g-3">
+  {% for t in trainers %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card trainer-card h-100">
+      <div class="card-body d-flex gap-3">
+        {% include "trainers/_avatar.html" with size="lg" %}
+        <div class="min-w-0 flex-grow-1">
+          <div class="d-flex justify-content-between gap-2"><a href="{{ t.get_absolute_url }}" class="h5 mb-0 text-body text-decoration-none stretched-link">{{ t.name }}</a><span class="badge bg-{{ t.status_badge }}-subtle text-{{ t.status_badge }}-emphasis align-self-start">{{ t.get_employment_status_display }}</span></div>
+          <div class="small text-muted mb-2">{{ t.get_employment_type_display }}</div>
+          <div class="d-flex flex-wrap gap-1 mb-2">{% for s in t.specialty_list %}<span class="badge bg-primary-subtle text-primary-emphasis">{{ s }}</span>{% endfor %}</div>
+          <div class="small"><i class="bi bi-people me-1"></i>{{ t.member_count }} member{{ t.member_count|pluralize }} assigned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% if is_paginated %}<div class="card mt-3">{% include "components/pagination.html" %}</div>{% endif %}
+{% else %}
+<div class="card">
+  {% if can_create %}{% url 'trainers:create' as create_url %}{% include "components/empty_state.html" with icon="person-badge" title="No trainers yet" message="Add your first trainer. They receive an email to set their password." action_url=create_url action_label="Add trainer" %}
+  {% else %}{% include "components/empty_state.html" with icon="person-badge" title="No trainers found" %}{% endif %}
+</div>
+{% endif %}
+{% endblock %}

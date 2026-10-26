@@ -1,0 +1,19 @@
+{% comment %}
+Shared confirmation dialog. Trigger with a submit button inside a form:
+<button type="submit" data-confirm="Message" data-confirm-title="Title" data-confirm-label="Yes" data-confirm-class="btn-danger">
+{% endcomment %}
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:16px">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="confirmModalTitle" data-confirm-title>Please confirm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-muted" data-confirm-message></div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" data-confirm-ok>Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

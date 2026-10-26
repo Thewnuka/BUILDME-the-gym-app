@@ -1,0 +1,14 @@
+{% autoescape off %}Hello {{ user.get_short_name|default:user.get_username }},
+
+A {{ brand }} account has been created for you at {{ domain }}.
+
+Your username is: {{ user.get_username }}
+
+Open the link below to set your password and activate access:
+
+{{ protocol }}://{{ domain }}{% url 'accounts:password_reset_confirm' uidb64=uid token=token %}
+
+The link expires in 24 hours. If it expires, use "Forgot password?" on the sign-in page.
+
+— The {{ brand }} team
+{% endautoescape %}

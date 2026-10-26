@@ -1,0 +1,5 @@
+{% extends "errors/_error.html" %}
+{% block title %}Something went wrong · {{ GYM_NAME|default:"BUILDME" }}{% endblock %}
+{% block code %}500{% endblock %}
+{% block heading %}Something went wrong{% endblock %}
+{% block message %}An unexpected error occurred and has been logged. Please try again in a moment.{% endblock %}
